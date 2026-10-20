@@ -96,8 +96,8 @@ async function loadPoint(lat, lon){
   const sig = pointAbort.signal;
   try{
     const [w, aq] = await Promise.all([
-      getJSON(omURL([lat.toFixed(4)],[lon.toFixed(4)]), sig),
-      getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=aerosol_optical_depth&forecast_days=4&timeformat=unixtime&timezone=GMT`, sig).catch(()=>null)
+      omGet(omURL([lat.toFixed(4)],[lon.toFixed(4)]), 1, VARS.length, sig),
+      omGet(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=aerosol_optical_depth&forecast_days=4&timeformat=unixtime&timezone=GMT`, 1, 1, sig).catch(()=>null)
     ]);
     const off = w.hourly.time.indexOf(S.times[0]);
     if(off<0) throw new Error('misaligned');
@@ -108,7 +108,11 @@ async function loadPoint(lat, lon){
     P.transp = P.cloud.map((_,t)=>C.estTransparency(P.hcloud[t],P.rh[t],P.aod[t]));
     if(S.pointKey!==key) return;
     S.point = P; S.eval=null; renderPanel(); drawBand();
-  }catch(e){ if(e.name!=='AbortError'){ S.point=null; } }
+  }catch(e){
+    if(e.name==='AbortError') return;
+    S.point=null; S.pointKey='';
+    if(e instanceof RateLimited) setTimeout(()=>{ if(near(S.sel,{lat,lon})) loadPoint(lat,lon); }, Math.max(5e3, e.until-Date.now()+2e3));
+  }
 }
 function wxAt(t){
   if(S.point) { const P=S.point; return {cloud:P.cloud[t],hcloud:P.hcloud[t],seeing:P.seeing[t],transp:P.transp[t],rh:P.rh[t],td:P.td[t],temp:P.temp[t],w10:P.w10[t],j250:P.j250[t],aod:P.aod[t]}; }
@@ -152,6 +156,7 @@ const LAYERS = [
   {id:'high', name:'High cloud', key:'hcloud', sc:SC.cloud, ticks:['None','50%','Full'], dom:[0,100], note:'Thin cirrus that hides faint objects even when the sky looks clear.'},
   {id:'jet', name:'Jet stream', key:'j250', sc:SC.jet, ticks:['Calm','150 km/h','280+'], dom:[0,280], note:'Wind at 250 hPa (about 34,000 ft). Fast jet streams blur planets.'},
   {id:'dew', name:'Dew risk', key:'dew', sc:SC.dew, ticks:['Dew likely','4°C','Dry'], dom:[0,12], note:'Gap between temperature and dew point. Under 2°C your optics will fog without a dew heater.'},
+  {id:'none', name:'None', key:'none', sc:()=>null, ticks:['','',''], dom:[0,1], note:'No weather colors, so the base map shows clearly.'},
   {id:'lp', name:'Light pollution', key:'lp', sc:SC.lp, ticks:['City','Bortle 4','Dark'], dom:[17.6,21.95], note:'Estimated sky brightness from a city-glow model (Walker’s law). Same for every hour; does not include clouds or moonlight.'}
 ];
 const OVERLAYS = [
@@ -178,11 +183,12 @@ function layerVal(L, t, lat, lon, sunAlt){
 }
 function buildLayers(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
-  const n=12, grad=Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
+  const n=12, grad= L.key==='none' ? 'transparent' : Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
   $('#layers').innerHTML = `
-    <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
+    <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
     <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p></div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
+  $('#layers').insertAdjacentHTML('beforeend', basemapHTML()); wireBasemap($('#layers'));
   $('#layers').querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{ S.layer=b.dataset.layer; store.set('layer',S.layer); buildLayers(); render(); });
   $('#layers').querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ S.ov[b.dataset.ov]=!S.ov[b.dataset.ov]; store.set('ov',S.ov); buildLayers(); render(); });
 }
@@ -262,7 +268,8 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   // sphere + land
   ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle=PAL.sea; ctx.fill();
-  ctx.beginPath(); path(land); ctx.fillStyle=PAL.land; ctx.fill();
+  const bmOn = S.basemap!=='simple' && drawBasemap();
+  if(!bmOn){ ctx.beginPath(); path(land); ctx.fillStyle=PAL.land; ctx.fill(); }
   // global overlay raster: night + planet visibility
   const step = quality==='hi' ? 3 : 6;
   const ow = Math.ceil(W/step), oh = Math.ceil(H/step);
@@ -316,7 +323,7 @@ function draw(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const k = r/baseScale;
   const bb = path.bounds(NA_MASK);
-  if((S.grid || L.key==='lp') && isFinite(bb[0][0])){
+  if(L.key!=='none' && (S.grid || L.key==='lp') && isFinite(bb[0][0])){
     const bx0=Math.max(0,bb[0][0]-2), by0=Math.max(0,bb[0][1]-2), bx1=Math.min(W,bb[1][0]+2), by1=Math.min(H,bb[1][1]+2);
     if(bx1>bx0+2 && by1>by0+2){
       const area=(bx1-bx0)*(by1-by0);
@@ -330,7 +337,7 @@ function draw(){
         if(ll[1]<23||ll[1]>73||ll[0]<-172||ll[0]>-50) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
         const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt); const c=L.sc(v); if(!c) continue;
-        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=232;
+        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=bmOn?170:232;
       }
       wxCtx.putImageData(wimg,0,0);
       ctx.save(); ctx.beginPath(); path(NA_MASK); ctx.clip(); ctx.imageSmoothingEnabled=true;
@@ -568,7 +575,12 @@ function panelLoc(){
     h += `<form class="row" id="saveForm"><input type="text" id="saveName" value="${esc(S.savingName)}" placeholder="Name, e.g. My Backyard" aria-label="Location name" style="flex:1"><button class="btn primary" type="submit">Save location</button><button class="btn ghost" type="button" id="saveCancel">Cancel</button></form>`;
   }
   if(saved) h += horizonHTML(saved);
-  if(!wxAt(0)) h += `<div class="empty">${S.grid ? 'Loading the forecast for this spot…' : 'Waiting for forecast data.'} Map weather layers cover the US and Canada; spot forecasts work anywhere.</div>`;
+  if(!wxAt(0)){
+    const why = WX.error && WX.error.kind==='limit' ? `The forecast is paused to stay within Open-Meteo’s free limit and continues at ${fmtTime.format(new Date(WX.error.until))}.`
+      : WX.error && WX.error.kind==='network' ? 'The forecast service can’t be reached right now; Starcast will try again in a few minutes.'
+      : 'Loading the forecast for this spot…';
+    h += `<div class="empty">${why} Sky positions, plans and the calendar below don’t need it.</div>`;
+  }
   h += `<div class="now" id="nowCards"></div>`;
   if(n){
     h += `<div class="alert"><div class="h">Alert preview · ${esc(nightLabel(n))}</div><p>${esc(nightSummary(ev,n))}</p></div>`;
@@ -696,52 +708,78 @@ function siteStats(lat, lon, hrs){
   const win = C.bestWindow(ok,1);
   return { sqm: isNaN(sqm) ? (lp?lp.sqm:NaN) : sqm, bortle: lp?lp.bortle:null, cloud: c? sum/c : NaN, win: win ? {start:hrs[win.start], end:hrs[win.end-1]+1} : null };
 }
+const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+async function overpass(q){
+  let last;
+  for(const url of OVERPASS){
+    const ac=new AbortController(), timer=setTimeout(()=>ac.abort(), 35e3);
+    try{
+      const r=await fetch(url,{method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ac.signal});
+      clearTimeout(timer);
+      if(!r.ok){ last=new Error('HTTP '+r.status); continue; }
+      return await r.json();
+    }catch(e){ clearTimeout(timer); last=e; }
+  }
+  throw last || new Error('no Overpass server');
+}
+function placeKind(t){
+  const n=t.name||'';
+  if(t.dsp) return 'Dark-sky place';
+  if(/National Park/i.test(n)) return 'National park';
+  if(/State Park/i.test(n)) return 'State park';
+  if(/National Forest/i.test(n)) return 'National forest';
+  if(/State Forest/i.test(n)) return 'State forest';
+  if(/County (Park|Forest)/i.test(n)) return 'County park';
+  if(t.tags && t.tags.tourism==='camp_site') return 'Campground';
+  if(/Wilderness/i.test(n)) return 'Wilderness';
+  if(/Wildlife/i.test(n)) return 'Wildlife area';
+  if(/Natural Area|Nature|Preserve/i.test(n) || (t.tags&&t.tags.leisure==='nature_reserve')) return 'Natural area';
+  if(/Recreation Area/i.test(n)) return 'Recreation area';
+  return 'Public land';
+}
 async function findDrive(){
   const ev = evaluate(), n = ev.nights[S.night];
-  const D = S.drive; D.err=null; D.results=null;
+  const D = S.drive; D.err=null; D.note=null; D.results=null;
   if(!n){ D.err='No darkness in the forecast window.'; renderPanel(); return; }
   const hrs = nightDarkHours(n, ev);
   if(!hrs.length){ D.err='The sky never gets fully dark that night.'; renderPanel(); return; }
-  if(!S.grid){ D.err='The forecast has not loaded yet.'; renderPanel(); return; }
   D.busy=true; renderPanel();
-  await ensureTilesAround(S.sel.lat, S.sel.lon, D.radius*1.609);
   const home = {lat:S.sel.lat, lon:S.sel.lon}, R = D.radius*1.609;
+  if(S.grid) { try{ await ensureTilesAround(home.lat, home.lon, R); }catch(e){} }
   D.from = locName(); D.home = siteStats(home.lat, home.lon, hrs);
-  const cands=[], dLat=0.07;
-  for(let la=home.lat-R/111; la<=home.lat+R/111; la+=dLat){
-    const dLon = dLat/Math.cos(la*Math.PI/180);
-    for(let lo=home.lon-R/(111*Math.cos(la*Math.PI/180)); lo<=home.lon+R/(111*Math.cos(la*Math.PI/180)); lo+=dLon){
-      const km = C.kmBetween(home.lat,home.lon,la,lo); if(km>R || km<6) continue;
-      if(isNaN(gridVal('cloud',hrs[0],la,lo)) || !onLand(la,lo)) continue;
-      const st = siteStats(la,lo,hrs); if(isNaN(st.cloud)) continue;
-      const clear = Math.pow(clamp((100-st.cloud)/100,0,1),1.2), dark = clamp((st.sqm-18.5)/3.4,0,1);
-      cands.push({lat:la, lon:lo, km, st, score: 100*clear*(0.3+0.7*dark)*(1-0.15*km/R)});
-    }
-  }
-  cands.sort((a,b)=>b.score-a.score);
-  const picks=[]; for(const c of cands){ if(picks.every(p=>C.kmBetween(p.lat,p.lon,c.lat,c.lon)>25)) picks.push(c); if(picks.length>=5) break; }
-  if(!picks.length){ D.busy=false; D.err='No forecast-covered land within that range. Try a larger radius.'; renderPanel(); return; }
-  // public land near each pick, from OpenStreetMap
-  let parks=[];
+  // 1. real, named public places within range (OpenStreetMap)
+  const around = `(around:${Math.round(R*1000)},${home.lat.toFixed(4)},${home.lon.toFixed(4)})`;
+  const q = `[out:json][timeout:40];(
+    nwr["leisure"="park"]["name"~"State Park|County Park|Recreation Area|National Park",i]${around};
+    nwr["boundary"~"^(protected_area|national_park)$"]["name"~"State Park|State Forest|National Forest|National Park|Wildlife|Natural Area|Recreation Area|Wilderness|Preserve|County Forest",i]${around};
+    nwr["leisure"="nature_reserve"]["name"~"State|National|Natural Area|Preserve|Wildlife",i]${around};
+    nwr["landuse"="forest"]["name"~"State Forest|National Forest|County Forest",i]${around};
+    nwr["tourism"="camp_site"]["name"]${around};
+  );out center tags 900;`;
+  let places=[];
   try{
-    const q = '[out:json][timeout:25];(' + picks.map(c=>{ const a=`(around:14000,${c.lat.toFixed(4)},${c.lon.toFixed(4)})`;
-      return `nwr["leisure"="nature_reserve"]["name"]${a};nwr["leisure"="park"]["name"~"State|County|Natural|Forest|Recreation|Wildlife",i]${a};nwr["boundary"="protected_area"]["name"]${a};nwr["boundary"="national_park"]["name"]${a};`; }).join('') + ');out center tags 500;';
-    const j = await getJSON('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
-    parks = (j.elements||[]).map(e=>({ name:e.tags.name, tags:e.tags, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
-      .filter(x=>x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
-  }catch(e){ console.warn('Overpass failed', e); D.err='Could not reach OpenStreetMap to look up parks, so these are dark, clear areas. Check public access before you go.'; }
-  const kindOf = t => /State Park/i.test(t.name)?'State park':/National Forest/i.test(t.name)?'National forest':/State Forest/i.test(t.name)?'State forest':/County (Park|Forest)/i.test(t.name)?'County park':/Natural Area|Nature/i.test(t.name)||t.tags.leisure==='nature_reserve'?'Natural area':/Wildlife/i.test(t.name)?'Wildlife area':'Public land';
-  const rank = t => /State Park|National Forest|State Forest|County Park|Natural Area|Wildlife Area|Recreation Area/i.test(t.name) ? 2 : 1;
-  const used = new Set();
-  D.results = picks.map(c=>{
-    let best=null;
-    parks.forEach(pk=>{ if(used.has(pk.id)) return; const d=C.kmBetween(c.lat,c.lon,pk.lat,pk.lon); if(d>14) return;
-      const sc = rank(pk) * 10 - d*0.5; if(!best || sc>best.sc) best={pk, sc}; });
-    if(best){ used.add(best.pk.id); const pk=best.pk; const st=siteStats(pk.lat,pk.lon,hrs);
-      return { name:pk.name, kind:kindOf(pk), lat:pk.lat, lon:pk.lon, km:C.kmBetween(home.lat,home.lon,pk.lat,pk.lon), st, osm:`https://www.openstreetmap.org/${pk.id}`, hours:pk.tags.opening_hours||'', fee:pk.tags.fee||'' }; }
-    const lp=C.lightPollution(c.lat,c.lon);
-    return { name:`Dark, clear area ${lp&&lp.brightest?'away from '+lp.brightest.name:''}`.trim(), kind:'Check access', lat:c.lat, lon:c.lon, km:c.km, st:c.st, osm:`https://www.openstreetmap.org/?mlat=${c.lat.toFixed(4)}&mlon=${c.lon.toFixed(4)}#map=11/${c.lat.toFixed(4)}/${c.lon.toFixed(4)}` };
-  }).sort((a,b)=> (b.st.sqm - a.st.sqm)*8 + (a.st.cloud - b.st.cloud) );
+    const j = await overpass(q);
+    places = (j.elements||[]).map(e=>({ name:e.tags&&e.tags.name, tags:e.tags||{}, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
+      .filter(x=>x.name && x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
+  }catch(e){ console.warn('Overpass failed', e); D.note='OpenStreetMap’s park search is busy right now, so only known dark-sky places are listed. Try again in a minute for parks and forests.'; }
+  // known dark-sky parks and observatories within range
+  SKYPLACES.filter(([nm])=>!/Observatory/.test(nm)).forEach(([nm,la,lo])=>{ if(C.kmBetween(home.lat,home.lon,la,lo)<=R) places.push({name:nm.replace(/ · .*/,''), lat:la, lon:lo, tags:{}, id:'dsp:'+nm, dsp:true}); });
+  // 2. keep the darkest point of each named place, then score
+  const byName=new Map();
+  places.forEach(pl=>{ const km=C.kmBetween(home.lat,home.lon,pl.lat,pl.lon); if(km>R || km<3) return;
+    const lp=C.lightPollution(pl.lat,pl.lon); pl.sqm = lp ? lp.sqm : 21; pl.km=km;
+    const key=pl.name.toLowerCase(); const prev=byName.get(key); if(!prev || pl.sqm>prev.sqm) byName.set(key,pl); });
+  const scored=[...byName.values()].map(pl=>{
+    const st=siteStats(pl.lat,pl.lon,hrs), dark=clamp((pl.sqm-18.5)/3.4,0,1);
+    const clear = isNaN(st.cloud) ? 0.7 : Math.pow(clamp((100-st.cloud)/100,0,1),1.2);
+    const kind=placeKind(pl), bonus = pl.dsp ? 1.25 : kind==='Campground' ? 1.08 : /park|forest|Wilderness/i.test(kind) ? 1.05 : 1;
+    return { name:pl.name, kind, lat:pl.lat, lon:pl.lon, km:pl.km, st, osm: pl.id.startsWith('dsp:') ? `https://www.openstreetmap.org/?mlat=${pl.lat}&mlon=${pl.lon}#map=12/${pl.lat}/${pl.lon}` : `https://www.openstreetmap.org/${pl.id}`,
+      hours:pl.tags.opening_hours||'', fee:pl.tags.fee||'', score: 100*clear*(0.25+0.75*dark)*bonus*(1-0.18*pl.km/R) };
+  }).sort((a,b)=>b.score-a.score);
+  const picked=[]; for(const r of scored){ if(picked.every(p=>C.kmBetween(p.lat,p.lon,r.lat,r.lon)>8)) picked.push(r); if(picked.length>=6) break; }
+  D.results = picked;
+  if(!picked.length) D.err = D.note ? D.note : `No named parks, forests or campgrounds found within ${D.radius} miles in OpenStreetMap. Try a larger range.`;
+  if(!S.grid || isNaN(D.home.cloud)) D.note = (D.note? D.note+' ':'') + 'No cloud forecast is loaded, so places are ranked by sky darkness and distance only.';
   D.busy=false; renderPanel(); render();
   addDriveTimes();
 }
@@ -750,13 +788,14 @@ function driveHTML(){
   let h = `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Where to go</h4>
     <span class="row"><select id="driveR" aria-label="Driving range">${[30,60,90,120].map(m=>`<option value="${m}" ${m===D.radius?'selected':''}>within ${m} mi</option>`).join('')}</select>
     <button class="btn primary" id="driveGo" ${D.busy?'disabled':''}>${D.busy?'Searching…':'Find dark, clear spots'}</button></span></div>`;
-  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Searches public parks and forests within range for the darkest sky with the fewest clouds ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
+  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Finds named state and county parks, forests, natural areas, campgrounds and dark-sky places within range, ranked by sky darkness, clouds and distance ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
   if(D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.err)}</p>`;
+  if(D.note && !D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.note)}</p>`;
   if(D.results){
     const hm = D.home;
     h += `<p class="sub" style="margin:0 0 6px">From ${esc(D.from)}: Bortle ${hm.bortle??'?'}, ${isNaN(hm.cloud)?'no forecast':Math.round(hm.cloud)+'% cloud'} during full darkness.</p><ul class="tlist">`;
     h += D.results.map((r,i)=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(r.name)}</b>
-      <span class="sub" style="white-space:normal">${esc(r.kind)} · ${esc(driveDetail(r))} · Bortle ${r.st.bortle??'?'} · ${Math.round(r.st.cloud)}% cloud${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
+      <span class="sub" style="white-space:normal">${esc(r.kind)} · ${esc(driveDetail(r))} · Bortle ${r.st.bortle??'?'} · ${isNaN(r.st.cloud)?'clouds unknown':Math.round(r.st.cloud)+'% cloud'}${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
       <span class="row" style="margin-top:5px;gap:12px"><button class="more" data-dgo="${i}" style="padding:0">Show forecast</button>
       <a class="more" style="padding:0" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat.toFixed(5)},${r.lon.toFixed(5)}" target="_blank" rel="noopener">Directions</a>
       <a class="more" style="padding:0" href="${r.osm}" target="_blank" rel="noopener">Map</a></span></div></li>`).join('');

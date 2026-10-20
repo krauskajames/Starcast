@@ -2,7 +2,7 @@
 window.addEventListener('resize', ()=>{ clearTimeout(resize.t); resize.t=setTimeout(resize,80); });
 applyTheme(store.get('theme','auto'));
 { const hm = homeSpot(); if(hm){ S.sel = {lat:hm.lat, lon:hm.lon, name:hm.name}; } }
-buildLayers(); resize();
+buildLayers(); showAttribution(); resize();
 proj.rotate([-S.sel.lon, -S.sel.lat, 0]);
 setTime(nowIndex());
 renderPanel();

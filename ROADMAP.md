@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 20, 2026 · Current version: v3.0
+Last updated: October 20, 2026 · Current version: v3.1
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -13,7 +13,7 @@ Last updated: October 20, 2026 · Current version: v3.0
 - Web app that runs in any browser first, installable on a phone's home screen; a store app maybe later.
 - Single user for now; built so accounts can be added later.
 - Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts work anywhere.
-- Weather data: Open-Meteo (free for non-commercial use). A coarse continental grid loads first; detailed 0.5° tiles load for the region you zoom into, cached for 90 minutes to stay within free limits.
+- Weather data: Open-Meteo (free for non-commercial use: 600 calls a minute, 5,000 an hour, 10,000 a day, counted per location). Starcast keeps a running budget below those limits: a light 4° × 5° continental grid loads first, detailed 0.5° tiles load gradually for the region you zoom into, and everything is cached for 90 minutes. If data can't load, the map shows no weather rather than sample weather.
 - Astronomy math runs in the browser (Astronomy Engine, satellite.js), so sky positions, events and seasons need no outside data.
 - Alerts run as a free scheduled GitHub Actions job; personal locations live in a repository secret.
 
@@ -29,6 +29,9 @@ Last updated: October 20, 2026 · Current version: v3.0
 | Light, dark and automatic themes | ✅ | v2.0 |
 | Weather layers for the contiguous US, Alaska and Canada | ✅ | v3.0; coarse grid plus detailed tiles on zoom |
 | City labels that scale with zoom; dark-sky parks and observatories marked | ✅ | v3.0 |
+| Base maps: simple, OpenStreetMap, topographic, satellite, dark streets, NASA night lights | ✅ | v3.1 |
+| "None" weather layer, to read the base map clearly | ✅ | v3.1 |
+| Weather opacity slider | 💡 | |
 | More detailed Canadian coastline | 💡 | Currently a simplified outline |
 | Weather layers for the rest of the world | 💡 | |
 | Wind-particle animation like nullschool (jet stream) | 💡 | |
@@ -75,6 +78,7 @@ Last updated: October 20, 2026 · Current version: v3.0
 | Alert preview message | ✅ | Includes aurora and forecast confidence |
 | Where to go: darkest, clearest public land within 30–120 miles | ✅ | v2.0 |
 | Driving times and park opening hours for "Where to go" | ✅ | v3.0; OSRM routing, OpenStreetMap hours where listed |
+| "Where to go" lists only real named places: state and county parks, forests, natural areas, campgrounds, dark-sky parks | ✅ | v3.1; backup OpenStreetMap servers when the main one is busy |
 | Solar observing days (with a solar filter only) | ✅ | |
 | Sunspot and solar flare activity | 💡 | For solar observing and aurora |
 
@@ -160,6 +164,7 @@ Last updated: October 20, 2026 · Current version: v3.0
 
 ## Version history
 
+- **v3.1 (Oct 20, 2026):** Fixed live forecasts failing (too many requests for Open-Meteo's free limit) with a request budget and gradual loading; no more sample weather on failure. "Where to go" rebuilt around real named places. Added base maps and a "None" weather layer.
 - **v3.0 (Oct 20, 2026):** North America coverage (US, Alaska, Canada); place search, typed coordinates, current location, home spot, horizon profiles; observing plan, red view, sky chart, observing log and Messier checklist; full Messier catalog; gear profiles with binoculars and naked eye, eyepiece advisor, photography helper and framing preview; Jupiter's moons, Moon terminator features, lunar occultations, ISS passes; forecast confidence, driving times, park hours; install as an app, backup and restore; weekly outlook alert.
 - **v2.0 (Oct 20, 2026):** Light and dark themes, light-pollution layer and Bortle estimates, aurora, "Where to go," real alerts through GitHub Actions.
 - **v1.1 (Oct 20, 2026):** Filters, Mars seasons, Saturn ring tilt, Sun overlay, solar observing, planet status card, forecast checks, feature log.

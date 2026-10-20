@@ -2,7 +2,7 @@
 
 **An astronomy viewing-conditions globe.** Starcast puts sky-watching weather on a 3D globe the way earth.nullschool.net does for wind, gives you ClearDarkSky-style hourly forecasts for any spot, tells you what is worth pointing your own telescope or binoculars at tonight, plans the night for you, and alerts you when a good night is coming.
 
-Version 3.0 · October 2026 · Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts and sky information work anywhere.
+Version 3.1 · October 2026 · Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts and sky information work anywhere.
 
 ---
 
@@ -11,6 +11,7 @@ Version 3.0 · October 2026 · Weather map layers cover the contiguous US, Alask
 **On the globe**
 - **Weather layers for the US and Canada:** cloud cover, an overall observing score, seeing, transparency, high cloud, jet stream, dew risk and light pollution. Zoom in and detailed regional data loads automatically.
 - **Sky layers:** the night side, the sunlit side, the aurora (NOAA), and where on Earth each planet or the Moon can be seen.
+- **Base maps:** the simple map, OpenStreetMap, topographic, satellite, dark streets, or NASA's night-lights view of the Earth (a good real-world check on light pollution). Choose **None** under weather to read the map clearly.
 - **72-hour time slider**, light/dark/automatic theme, and a red night-vision mode.
 
 **For any spot**
@@ -21,7 +22,7 @@ Version 3.0 · October 2026 · Weather map layers cover the contiguous US, Alask
 - **Red view:** the plan one target at a time in large red text for use at the telescope. It keeps the screen awake.
 - **Sky chart:** your whole sky at the chosen hour, with constellations, planets, tonight's targets and your horizon.
 - **Tonight's events:** Jupiter's moons (and when one crosses the planet), Moon features along the terminator, and visible ISS and Tiangong passes.
-- **Where to go:** the darkest, clearest public parks and forests within 30–120 miles, with driving times and opening hours where known.
+- **Where to go:** named state and county parks, forests, natural areas, campgrounds and dark-sky parks within 30–120 miles, ranked by sky darkness, clouds and distance, with driving times and opening hours where known.
 - **Solar observing:** daytime clear spells, shown only once a certified solar filter is in your gear.
 
 **Planning and setup**
@@ -64,7 +65,12 @@ Seeing, transparency and light pollution are estimates. Use **Forecast checks** 
 
 The light-pollution model counts towns of a few thousand people only in the Upper Midwest. Elsewhere it uses cities of about 30,000 or more, so some rural spots near small towns read a little darker than they really are. You can override sky darkness for any saved spot.
 
-The weather map loads a coarse grid for the whole continent first, then detailed 0.5° data for wherever you zoom in. Everything is cached in your browser for 90 minutes, which keeps a single user well within Open-Meteo's free limits.
+Open-Meteo's free tier allows 600 calls a minute, 5,000 an hour and 10,000 a day, and counts each place in a request as a call. Starcast keeps a running budget below those limits:
+- A light grid for the whole continent loads first (about 180 places).
+- Detailed 0.5° data loads a few areas at a time for wherever you zoom in.
+- Everything is cached in your browser for 90 minutes.
+
+If the limit is reached anyway, the line under the logo says so and when loading will continue. Starcast never fills the map with made-up weather; add `?demo` to the address to see sample weather for testing.
 
 ## Alerts (one-time setup)
 
@@ -122,7 +128,7 @@ This repository is set up for GitHub Pages: go to **Settings → Pages** and dep
 |---|---|
 | `index.html` | The whole app in one file, built from `src/`. This is what GitHub Pages serves |
 | `src/app.html` | The page layout and styles |
-| `src/js/*.js` | The app's code, in modules: main (globe, panels), weather, locations, telescope (plan, red view, sky chart, log), gear, events, app (confidence, drive times, backup, install), boot |
+| `src/js/*.js` | The app's code, in modules: main (globe, panels), weather, base maps, locations, telescope (plan, red view, sky chart, log), gear, events, app (confidence, drive times, backup, install), boot |
 | `src/core.js` | Starcast's astronomy, forecast and scoring engine, shared by the app and the alert job |
 | `build.mjs`, `package.json` | Build script: `npm install`, then `npm run build` rebuilds `index.html` |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png` | Let Starcast install on a phone and open offline |
@@ -152,6 +158,7 @@ To change the app, edit the files in `src/` and run `npm run build` (needs Node.
 - Aurora and Kp forecasts from the [NOAA Space Weather Prediction Center](https://www.swpc.noaa.gov/).
 - Park data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through the Overpass API. Driving times from [OSRM](https://project-osrm.org/).
 - Satellite orbits from [CelesTrak](https://celestrak.org/).
+- Base map tiles: [OpenStreetMap](https://www.openstreetmap.org/copyright) (© OpenStreetMap contributors), [OpenTopoMap](https://opentopomap.org/) (CC-BY-SA), Esri World Imagery (© Esri, Maxar, Earthstar Geographics), [CARTO](https://carto.com/attributions) dark basemap, and NASA Black Marble night lights via [GIBS](https://www.earthdata.nasa.gov/gibs). Tiles are loaded only for what's on screen, as their usage policies ask.
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross (MIT License).
 - [satellite.js](https://github.com/shashwatak/satellite-js) (MIT License).
 - Star, constellation and Messier data from [d3-celestial](https://github.com/ofrohn/d3-celestial) by Olaf Frohn (BSD 3-Clause License).

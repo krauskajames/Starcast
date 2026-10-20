@@ -84,7 +84,7 @@ button{cursor:pointer}
 .iconbtn[aria-pressed="true"]{color:#ff8a7a;border-color:#5a2222}
 
 /* layers */
-.layers{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:84px;width:208px;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(6px)}
+.layers{position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:84px;width:208px;max-height:calc(100% - 84px - 96px);overflow-y:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(6px)}
 .lgroup h3{margin:0 0 6px;font-family:var(--f-display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:600}
 .chips{display:flex;flex-direction:column;gap:2px}
 .chip{display:flex;align-items:center;gap:8px;width:100%;text-align:left;background:none;border:1px solid transparent;border-radius:6px;padding:5px 7px;color:var(--fg);font-size:13px}
@@ -224,6 +224,7 @@ table.views th.r{text-align:right}
 .note a{color:var(--muted)}
 #red{position:fixed;inset:0;background:#ff0000;mix-blend-mode:multiply;pointer-events:none;z-index:50}
 .toast{position:fixed;left:50%;bottom:90px;transform:translateX(-50%);background:var(--fg);color:var(--bg);padding:8px 14px;border-radius:6px;font-size:13px;z-index:40;font-weight:700}
+.attrib{position:absolute;right:max(8px,env(safe-area-inset-right,0px));bottom:86px;max-width:60%;font-size:10.5px;color:var(--muted);background:var(--panel);padding:2px 7px;border-radius:4px;text-align:right}
 .tip{position:absolute;pointer-events:none;background:var(--panel-solid);border:1px solid var(--line-2);border-radius:6px;padding:5px 8px;font-size:12px;z-index:5;white-space:nowrap}
 
 /* observing plan */
@@ -264,7 +265,8 @@ table.views th.r{text-align:right}
   .handle i{display:block;margin:0 auto;width:40px;height:4px;border-radius:2px;background:var(--line-2)}
   .tabs{padding-top:0}
   #stage{position:fixed;left:0;right:0;top:0;bottom:var(--sheet,52%)}
-  .layers{top:auto;bottom:74px;left:0;right:0;width:auto;border-radius:0;border-left:0;border-right:0;flex-direction:row;overflow-x:auto;padding:8px max(16px,env(safe-area-inset-left,0px));gap:14px}
+  .attrib{bottom:148px;max-width:90%}
+  .layers{max-height:none;top:auto;bottom:74px;left:0;right:0;width:auto;border-radius:0;border-left:0;border-right:0;flex-direction:row;overflow-x:auto;padding:8px max(16px,env(safe-area-inset-left,0px));gap:14px}
   .layers .lgroup{flex:none}
   .layers .chips{flex-direction:row;gap:4px}
   .chip{width:auto;white-space:nowrap}
@@ -298,6 +300,7 @@ table.views th.r{text-align:right}
       </div>
     </div>
     <div class="tip" id="tip" hidden></div>
+    <div class="attrib" id="attrib" hidden></div>
   </div>
   <aside class="panel" id="panel">
     <button class="handle" id="handle" aria-label="Resize panel"><i></i></button>
@@ -1504,8 +1507,8 @@ async function loadPoint(lat, lon){
   const sig = pointAbort.signal;
   try{
     const [w, aq] = await Promise.all([
-      getJSON(omURL([lat.toFixed(4)],[lon.toFixed(4)]), sig),
-      getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=aerosol_optical_depth&forecast_days=4&timeformat=unixtime&timezone=GMT`, sig).catch(()=>null)
+      omGet(omURL([lat.toFixed(4)],[lon.toFixed(4)]), 1, VARS.length, sig),
+      omGet(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=aerosol_optical_depth&forecast_days=4&timeformat=unixtime&timezone=GMT`, 1, 1, sig).catch(()=>null)
     ]);
     const off = w.hourly.time.indexOf(S.times[0]);
     if(off<0) throw new Error('misaligned');
@@ -1516,7 +1519,11 @@ async function loadPoint(lat, lon){
     P.transp = P.cloud.map((_,t)=>C.estTransparency(P.hcloud[t],P.rh[t],P.aod[t]));
     if(S.pointKey!==key) return;
     S.point = P; S.eval=null; renderPanel(); drawBand();
-  }catch(e){ if(e.name!=='AbortError'){ S.point=null; } }
+  }catch(e){
+    if(e.name==='AbortError') return;
+    S.point=null; S.pointKey='';
+    if(e instanceof RateLimited) setTimeout(()=>{ if(near(S.sel,{lat,lon})) loadPoint(lat,lon); }, Math.max(5e3, e.until-Date.now()+2e3));
+  }
 }
 function wxAt(t){
   if(S.point) { const P=S.point; return {cloud:P.cloud[t],hcloud:P.hcloud[t],seeing:P.seeing[t],transp:P.transp[t],rh:P.rh[t],td:P.td[t],temp:P.temp[t],w10:P.w10[t],j250:P.j250[t],aod:P.aod[t]}; }
@@ -1560,6 +1567,7 @@ const LAYERS = [
   {id:'high', name:'High cloud', key:'hcloud', sc:SC.cloud, ticks:['None','50%','Full'], dom:[0,100], note:'Thin cirrus that hides faint objects even when the sky looks clear.'},
   {id:'jet', name:'Jet stream', key:'j250', sc:SC.jet, ticks:['Calm','150 km/h','280+'], dom:[0,280], note:'Wind at 250 hPa (about 34,000 ft). Fast jet streams blur planets.'},
   {id:'dew', name:'Dew risk', key:'dew', sc:SC.dew, ticks:['Dew likely','4°C','Dry'], dom:[0,12], note:'Gap between temperature and dew point. Under 2°C your optics will fog without a dew heater.'},
+  {id:'none', name:'None', key:'none', sc:()=>null, ticks:['','',''], dom:[0,1], note:'No weather colors, so the base map shows clearly.'},
   {id:'lp', name:'Light pollution', key:'lp', sc:SC.lp, ticks:['City','Bortle 4','Dark'], dom:[17.6,21.95], note:'Estimated sky brightness from a city-glow model (Walker’s law). Same for every hour; does not include clouds or moonlight.'}
 ];
 const OVERLAYS = [
@@ -1586,11 +1594,12 @@ function layerVal(L, t, lat, lon, sunAlt){
 }
 function buildLayers(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
-  const n=12, grad=Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
+  const n=12, grad= L.key==='none' ? 'transparent' : Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
   $('#layers').innerHTML = `
-    <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
+    <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
     <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p></div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
+  $('#layers').insertAdjacentHTML('beforeend', basemapHTML()); wireBasemap($('#layers'));
   $('#layers').querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{ S.layer=b.dataset.layer; store.set('layer',S.layer); buildLayers(); render(); });
   $('#layers').querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ S.ov[b.dataset.ov]=!S.ov[b.dataset.ov]; store.set('ov',S.ov); buildLayers(); render(); });
 }
@@ -1670,7 +1679,8 @@ function draw(){
   ctx.clearRect(0,0,W,H);
   // sphere + land
   ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle=PAL.sea; ctx.fill();
-  ctx.beginPath(); path(land); ctx.fillStyle=PAL.land; ctx.fill();
+  const bmOn = S.basemap!=='simple' && drawBasemap();
+  if(!bmOn){ ctx.beginPath(); path(land); ctx.fillStyle=PAL.land; ctx.fill(); }
   // global overlay raster: night + planet visibility
   const step = quality==='hi' ? 3 : 6;
   const ow = Math.ceil(W/step), oh = Math.ceil(H/step);
@@ -1724,7 +1734,7 @@ function draw(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const k = r/baseScale;
   const bb = path.bounds(NA_MASK);
-  if((S.grid || L.key==='lp') && isFinite(bb[0][0])){
+  if(L.key!=='none' && (S.grid || L.key==='lp') && isFinite(bb[0][0])){
     const bx0=Math.max(0,bb[0][0]-2), by0=Math.max(0,bb[0][1]-2), bx1=Math.min(W,bb[1][0]+2), by1=Math.min(H,bb[1][1]+2);
     if(bx1>bx0+2 && by1>by0+2){
       const area=(bx1-bx0)*(by1-by0);
@@ -1738,7 +1748,7 @@ function draw(){
         if(ll[1]<23||ll[1]>73||ll[0]<-172||ll[0]>-50) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
         const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt); const c=L.sc(v); if(!c) continue;
-        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=232;
+        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=bmOn?170:232;
       }
       wxCtx.putImageData(wimg,0,0);
       ctx.save(); ctx.beginPath(); path(NA_MASK); ctx.clip(); ctx.imageSmoothingEnabled=true;
@@ -1976,7 +1986,12 @@ function panelLoc(){
     h += `<form class="row" id="saveForm"><input type="text" id="saveName" value="${esc(S.savingName)}" placeholder="Name, e.g. My Backyard" aria-label="Location name" style="flex:1"><button class="btn primary" type="submit">Save location</button><button class="btn ghost" type="button" id="saveCancel">Cancel</button></form>`;
   }
   if(saved) h += horizonHTML(saved);
-  if(!wxAt(0)) h += `<div class="empty">${S.grid ? 'Loading the forecast for this spot…' : 'Waiting for forecast data.'} Map weather layers cover the US and Canada; spot forecasts work anywhere.</div>`;
+  if(!wxAt(0)){
+    const why = WX.error && WX.error.kind==='limit' ? `The forecast is paused to stay within Open-Meteo’s free limit and continues at ${fmtTime.format(new Date(WX.error.until))}.`
+      : WX.error && WX.error.kind==='network' ? 'The forecast service can’t be reached right now; Starcast will try again in a few minutes.'
+      : 'Loading the forecast for this spot…';
+    h += `<div class="empty">${why} Sky positions, plans and the calendar below don’t need it.</div>`;
+  }
   h += `<div class="now" id="nowCards"></div>`;
   if(n){
     h += `<div class="alert"><div class="h">Alert preview · ${esc(nightLabel(n))}</div><p>${esc(nightSummary(ev,n))}</p></div>`;
@@ -2104,52 +2119,78 @@ function siteStats(lat, lon, hrs){
   const win = C.bestWindow(ok,1);
   return { sqm: isNaN(sqm) ? (lp?lp.sqm:NaN) : sqm, bortle: lp?lp.bortle:null, cloud: c? sum/c : NaN, win: win ? {start:hrs[win.start], end:hrs[win.end-1]+1} : null };
 }
+const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
+async function overpass(q){
+  let last;
+  for(const url of OVERPASS){
+    const ac=new AbortController(), timer=setTimeout(()=>ac.abort(), 35e3);
+    try{
+      const r=await fetch(url,{method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ac.signal});
+      clearTimeout(timer);
+      if(!r.ok){ last=new Error('HTTP '+r.status); continue; }
+      return await r.json();
+    }catch(e){ clearTimeout(timer); last=e; }
+  }
+  throw last || new Error('no Overpass server');
+}
+function placeKind(t){
+  const n=t.name||'';
+  if(t.dsp) return 'Dark-sky place';
+  if(/National Park/i.test(n)) return 'National park';
+  if(/State Park/i.test(n)) return 'State park';
+  if(/National Forest/i.test(n)) return 'National forest';
+  if(/State Forest/i.test(n)) return 'State forest';
+  if(/County (Park|Forest)/i.test(n)) return 'County park';
+  if(t.tags && t.tags.tourism==='camp_site') return 'Campground';
+  if(/Wilderness/i.test(n)) return 'Wilderness';
+  if(/Wildlife/i.test(n)) return 'Wildlife area';
+  if(/Natural Area|Nature|Preserve/i.test(n) || (t.tags&&t.tags.leisure==='nature_reserve')) return 'Natural area';
+  if(/Recreation Area/i.test(n)) return 'Recreation area';
+  return 'Public land';
+}
 async function findDrive(){
   const ev = evaluate(), n = ev.nights[S.night];
-  const D = S.drive; D.err=null; D.results=null;
+  const D = S.drive; D.err=null; D.note=null; D.results=null;
   if(!n){ D.err='No darkness in the forecast window.'; renderPanel(); return; }
   const hrs = nightDarkHours(n, ev);
   if(!hrs.length){ D.err='The sky never gets fully dark that night.'; renderPanel(); return; }
-  if(!S.grid){ D.err='The forecast has not loaded yet.'; renderPanel(); return; }
   D.busy=true; renderPanel();
-  await ensureTilesAround(S.sel.lat, S.sel.lon, D.radius*1.609);
   const home = {lat:S.sel.lat, lon:S.sel.lon}, R = D.radius*1.609;
+  if(S.grid) { try{ await ensureTilesAround(home.lat, home.lon, R); }catch(e){} }
   D.from = locName(); D.home = siteStats(home.lat, home.lon, hrs);
-  const cands=[], dLat=0.07;
-  for(let la=home.lat-R/111; la<=home.lat+R/111; la+=dLat){
-    const dLon = dLat/Math.cos(la*Math.PI/180);
-    for(let lo=home.lon-R/(111*Math.cos(la*Math.PI/180)); lo<=home.lon+R/(111*Math.cos(la*Math.PI/180)); lo+=dLon){
-      const km = C.kmBetween(home.lat,home.lon,la,lo); if(km>R || km<6) continue;
-      if(isNaN(gridVal('cloud',hrs[0],la,lo)) || !onLand(la,lo)) continue;
-      const st = siteStats(la,lo,hrs); if(isNaN(st.cloud)) continue;
-      const clear = Math.pow(clamp((100-st.cloud)/100,0,1),1.2), dark = clamp((st.sqm-18.5)/3.4,0,1);
-      cands.push({lat:la, lon:lo, km, st, score: 100*clear*(0.3+0.7*dark)*(1-0.15*km/R)});
-    }
-  }
-  cands.sort((a,b)=>b.score-a.score);
-  const picks=[]; for(const c of cands){ if(picks.every(p=>C.kmBetween(p.lat,p.lon,c.lat,c.lon)>25)) picks.push(c); if(picks.length>=5) break; }
-  if(!picks.length){ D.busy=false; D.err='No forecast-covered land within that range. Try a larger radius.'; renderPanel(); return; }
-  // public land near each pick, from OpenStreetMap
-  let parks=[];
+  // 1. real, named public places within range (OpenStreetMap)
+  const around = `(around:${Math.round(R*1000)},${home.lat.toFixed(4)},${home.lon.toFixed(4)})`;
+  const q = `[out:json][timeout:40];(
+    nwr["leisure"="park"]["name"~"State Park|County Park|Recreation Area|National Park",i]${around};
+    nwr["boundary"~"^(protected_area|national_park)$"]["name"~"State Park|State Forest|National Forest|National Park|Wildlife|Natural Area|Recreation Area|Wilderness|Preserve|County Forest",i]${around};
+    nwr["leisure"="nature_reserve"]["name"~"State|National|Natural Area|Preserve|Wildlife",i]${around};
+    nwr["landuse"="forest"]["name"~"State Forest|National Forest|County Forest",i]${around};
+    nwr["tourism"="camp_site"]["name"]${around};
+  );out center tags 900;`;
+  let places=[];
   try{
-    const q = '[out:json][timeout:25];(' + picks.map(c=>{ const a=`(around:14000,${c.lat.toFixed(4)},${c.lon.toFixed(4)})`;
-      return `nwr["leisure"="nature_reserve"]["name"]${a};nwr["leisure"="park"]["name"~"State|County|Natural|Forest|Recreation|Wildlife",i]${a};nwr["boundary"="protected_area"]["name"]${a};nwr["boundary"="national_park"]["name"]${a};`; }).join('') + ');out center tags 500;';
-    const j = await getJSON('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
-    parks = (j.elements||[]).map(e=>({ name:e.tags.name, tags:e.tags, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
-      .filter(x=>x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
-  }catch(e){ console.warn('Overpass failed', e); D.err='Could not reach OpenStreetMap to look up parks, so these are dark, clear areas. Check public access before you go.'; }
-  const kindOf = t => /State Park/i.test(t.name)?'State park':/National Forest/i.test(t.name)?'National forest':/State Forest/i.test(t.name)?'State forest':/County (Park|Forest)/i.test(t.name)?'County park':/Natural Area|Nature/i.test(t.name)||t.tags.leisure==='nature_reserve'?'Natural area':/Wildlife/i.test(t.name)?'Wildlife area':'Public land';
-  const rank = t => /State Park|National Forest|State Forest|County Park|Natural Area|Wildlife Area|Recreation Area/i.test(t.name) ? 2 : 1;
-  const used = new Set();
-  D.results = picks.map(c=>{
-    let best=null;
-    parks.forEach(pk=>{ if(used.has(pk.id)) return; const d=C.kmBetween(c.lat,c.lon,pk.lat,pk.lon); if(d>14) return;
-      const sc = rank(pk) * 10 - d*0.5; if(!best || sc>best.sc) best={pk, sc}; });
-    if(best){ used.add(best.pk.id); const pk=best.pk; const st=siteStats(pk.lat,pk.lon,hrs);
-      return { name:pk.name, kind:kindOf(pk), lat:pk.lat, lon:pk.lon, km:C.kmBetween(home.lat,home.lon,pk.lat,pk.lon), st, osm:`https://www.openstreetmap.org/${pk.id}`, hours:pk.tags.opening_hours||'', fee:pk.tags.fee||'' }; }
-    const lp=C.lightPollution(c.lat,c.lon);
-    return { name:`Dark, clear area ${lp&&lp.brightest?'away from '+lp.brightest.name:''}`.trim(), kind:'Check access', lat:c.lat, lon:c.lon, km:c.km, st:c.st, osm:`https://www.openstreetmap.org/?mlat=${c.lat.toFixed(4)}&mlon=${c.lon.toFixed(4)}#map=11/${c.lat.toFixed(4)}/${c.lon.toFixed(4)}` };
-  }).sort((a,b)=> (b.st.sqm - a.st.sqm)*8 + (a.st.cloud - b.st.cloud) );
+    const j = await overpass(q);
+    places = (j.elements||[]).map(e=>({ name:e.tags&&e.tags.name, tags:e.tags||{}, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
+      .filter(x=>x.name && x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
+  }catch(e){ console.warn('Overpass failed', e); D.note='OpenStreetMap’s park search is busy right now, so only known dark-sky places are listed. Try again in a minute for parks and forests.'; }
+  // known dark-sky parks and observatories within range
+  SKYPLACES.filter(([nm])=>!/Observatory/.test(nm)).forEach(([nm,la,lo])=>{ if(C.kmBetween(home.lat,home.lon,la,lo)<=R) places.push({name:nm.replace(/ · .*/,''), lat:la, lon:lo, tags:{}, id:'dsp:'+nm, dsp:true}); });
+  // 2. keep the darkest point of each named place, then score
+  const byName=new Map();
+  places.forEach(pl=>{ const km=C.kmBetween(home.lat,home.lon,pl.lat,pl.lon); if(km>R || km<3) return;
+    const lp=C.lightPollution(pl.lat,pl.lon); pl.sqm = lp ? lp.sqm : 21; pl.km=km;
+    const key=pl.name.toLowerCase(); const prev=byName.get(key); if(!prev || pl.sqm>prev.sqm) byName.set(key,pl); });
+  const scored=[...byName.values()].map(pl=>{
+    const st=siteStats(pl.lat,pl.lon,hrs), dark=clamp((pl.sqm-18.5)/3.4,0,1);
+    const clear = isNaN(st.cloud) ? 0.7 : Math.pow(clamp((100-st.cloud)/100,0,1),1.2);
+    const kind=placeKind(pl), bonus = pl.dsp ? 1.25 : kind==='Campground' ? 1.08 : /park|forest|Wilderness/i.test(kind) ? 1.05 : 1;
+    return { name:pl.name, kind, lat:pl.lat, lon:pl.lon, km:pl.km, st, osm: pl.id.startsWith('dsp:') ? `https://www.openstreetmap.org/?mlat=${pl.lat}&mlon=${pl.lon}#map=12/${pl.lat}/${pl.lon}` : `https://www.openstreetmap.org/${pl.id}`,
+      hours:pl.tags.opening_hours||'', fee:pl.tags.fee||'', score: 100*clear*(0.25+0.75*dark)*bonus*(1-0.18*pl.km/R) };
+  }).sort((a,b)=>b.score-a.score);
+  const picked=[]; for(const r of scored){ if(picked.every(p=>C.kmBetween(p.lat,p.lon,r.lat,r.lon)>8)) picked.push(r); if(picked.length>=6) break; }
+  D.results = picked;
+  if(!picked.length) D.err = D.note ? D.note : `No named parks, forests or campgrounds found within ${D.radius} miles in OpenStreetMap. Try a larger range.`;
+  if(!S.grid || isNaN(D.home.cloud)) D.note = (D.note? D.note+' ':'') + 'No cloud forecast is loaded, so places are ranked by sky darkness and distance only.';
   D.busy=false; renderPanel(); render();
   addDriveTimes();
 }
@@ -2158,13 +2199,14 @@ function driveHTML(){
   let h = `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Where to go</h4>
     <span class="row"><select id="driveR" aria-label="Driving range">${[30,60,90,120].map(m=>`<option value="${m}" ${m===D.radius?'selected':''}>within ${m} mi</option>`).join('')}</select>
     <button class="btn primary" id="driveGo" ${D.busy?'disabled':''}>${D.busy?'Searching…':'Find dark, clear spots'}</button></span></div>`;
-  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Searches public parks and forests within range for the darkest sky with the fewest clouds ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
+  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Finds named state and county parks, forests, natural areas, campgrounds and dark-sky places within range, ranked by sky darkness, clouds and distance ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
   if(D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.err)}</p>`;
+  if(D.note && !D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.note)}</p>`;
   if(D.results){
     const hm = D.home;
     h += `<p class="sub" style="margin:0 0 6px">From ${esc(D.from)}: Bortle ${hm.bortle??'?'}, ${isNaN(hm.cloud)?'no forecast':Math.round(hm.cloud)+'% cloud'} during full darkness.</p><ul class="tlist">`;
     h += D.results.map((r,i)=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(r.name)}</b>
-      <span class="sub" style="white-space:normal">${esc(r.kind)} · ${esc(driveDetail(r))} · Bortle ${r.st.bortle??'?'} · ${Math.round(r.st.cloud)}% cloud${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
+      <span class="sub" style="white-space:normal">${esc(r.kind)} · ${esc(driveDetail(r))} · Bortle ${r.st.bortle??'?'} · ${isNaN(r.st.cloud)?'clouds unknown':Math.round(r.st.cloud)+'% cloud'}${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
       <span class="row" style="margin-top:5px;gap:12px"><button class="more" data-dgo="${i}" style="padding:0">Show forecast</button>
       <a class="more" style="padding:0" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat.toFixed(5)},${r.lon.toFixed(5)}" target="_blank" rel="noopener">Directions</a>
       <a class="more" style="padding:0" href="${r.osm}" target="_blank" rel="noopener">Map</a></span></div></li>`).join('');
@@ -2353,13 +2395,17 @@ $('#redBtn').onclick=()=>{ S.red=!S.red; $('#red').hidden=!S.red; $('#redBtn').s
 
 /* ---- 20-weather.js ---- */
 /* Weather data for North America (contiguous US, Alaska, Canada).
-   A coarse continental grid loads first; detailed 0.5-degree tiles load for whatever
-   region you zoom into. Everything is cached in the browser (IndexedDB) for 90 minutes. */
+   Open-Meteo's free tier allows 600 calls a minute, 5,000 an hour and 10,000 a day, and a
+   request for many places counts once per place. So Starcast keeps a running budget below
+   those limits, loads a light continental grid first, adds detail only for the area you
+   zoom into, and caches everything in the browser (IndexedDB) for 90 minutes.
+   If data can't be loaded, the map shows no weather rather than made-up weather. */
 
 const VARS = ['cloud_cover','cloud_cover_high','relative_humidity_2m','dew_point_2m','temperature_2m','wind_speed_10m','wind_speed_250hPa','wind_speed_500hPa'];
 const KEYS = ['cloud','hcloud','rh','td','temp','w10','j250','w500'];
 const API = 'https://api.open-meteo.com/v1/forecast';
 const CACHE_MS = 90*60e3;
+const DEMO = /[?&]demo\b/.test(location.search); // sample weather only when asked for (testing)
 function omURL(lats, lons, days){
   return `${API}?latitude=${lats.join(',')}&longitude=${lons.join(',')}&hourly=${VARS.join(',')}&forecast_days=${days||4}&timeformat=unixtime&timezone=GMT`;
 }
@@ -2368,6 +2414,38 @@ async function getJSON(url, signal){
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }
+
+/* --- Open-Meteo budget: stay well under the free limits --- */
+const LIMITS = { minute:420, hour:3800, day:8500 };
+const OM = { use: store.get('omUse', []), blockedUntil: store.get('omBlocked', 0), reason:'' };
+function omUsed(ms){ const t=Date.now()-ms; return OM.use.reduce((s,u)=>u[0]>t?s+u[1]:s,0); }
+function omWait(w){
+  // milliseconds until w more weighted calls fit inside all three windows (0 = now)
+  if(Date.now() < OM.blockedUntil) return OM.blockedUntil-Date.now();
+  if(omUsed(864e5)+w > LIMITS.day) return -1;
+  if(omUsed(36e5)+w > LIMITS.hour) return 10*60e3;
+  if(omUsed(6e4)+w > LIMITS.minute) return 62e3;
+  return 0;
+}
+function omSpend(w){ const now=Date.now(); OM.use = OM.use.filter(u=>u[0]>now-864e5); OM.use.push([now, Math.round(w*10)/10]); store.set('omUse', OM.use); }
+class RateLimited extends Error { constructor(until, reason){ super(reason); this.until=until; } }
+// weight per Open-Meteo: places × (variables / 10), minimum one week of data
+async function omGet(url, places, nVars, signal){
+  const w = places * Math.max(0.1, nVars/10);
+  const wait = omWait(w);
+  if(wait !== 0) throw new RateLimited(wait<0 ? nextUtcMidnight() : Date.now()+wait, wait<0 ? 'daily' : 'budget');
+  omSpend(w);
+  const r = await fetch(url, {signal});
+  if(r.status === 429){
+    let reason=''; try{ reason=(await r.json()).reason||''; }catch(e){}
+    const until = /daily/i.test(reason) ? nextUtcMidnight() : /hour/i.test(reason) ? Date.now()+ (60-new Date().getMinutes())*60e3 + 30e3 : Date.now()+65e3;
+    OM.blockedUntil = until; OM.reason = reason; store.set('omBlocked', until);
+    throw new RateLimited(until, reason || 'rate limit');
+  }
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function nextUtcMidnight(){ const d=new Date(); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1) + 60e3; }
 
 /* --- land mask: US states (detailed) + Canada --- */
 const US_STATES = topojson.feature(GEO.states, GEO.states.objects.states).features;
@@ -2388,13 +2466,13 @@ function nearNA(lat, lon, dLat, dLon){
 }
 
 /* --- grid layers --- */
-const COARSE = { id:'coarse', lat0:24, lon0:-170, dLat:2.5, dLon:3, nLat:20, nLon:40 };
+const COARSE = { id:'coarse2', lat0:24, lon0:-168, dLat:4, dLon:5, nLat:13, nLon:24 };
 const TILE_DEG = 5, FINE = 0.5;
 function tileSpec(lat, lon){
   const la = Math.floor(lat/TILE_DEG)*TILE_DEG, lo = Math.floor(lon/TILE_DEG)*TILE_DEG;
   return { id:`t${la}_${lo}`, lat0:la, lon0:lo, dLat:FINE, dLon:FINE, nLat:TILE_DEG/FINE+1, nLon:TILE_DEG/FINE+1 };
 }
-const WX = { coarse:null, tiles:new Map(), pending:new Map(), demo:false, at:0 };
+const WX = { coarse:null, tiles:new Map(), pending:new Map(), at:0, error:null };
 
 function specPoints(spec){
   const pts=[], idx=new Int32Array(spec.nLat*spec.nLon).fill(-1);
@@ -2409,31 +2487,34 @@ function deriveLayer(L){
   const n = L.nT*L.np; L.f.seeing=new Float32Array(n); L.f.transp=new Float32Array(n);
   for(let k=0;k<n;k++){ L.f.seeing[k]=C.estSeeing(L.f.j250[k],L.f.w500[k],L.f.w10[k]); L.f.transp[k]=C.estTransparency(L.f.hcloud[k],L.f.rh[k],null); }
 }
-async function fetchLayer(spec){
+const CHUNK = 50;
+function newLayer(spec){
   const {pts, idx} = specPoints(spec);
-  const L = Object.assign({}, spec, { idx, np:pts.length, t0:0, nT:0, f:{}, at:Date.now() });
-  if(!pts.length){ L.empty=true; return L; }
-  if(WX.demo) return demoLayer(L, pts);
-  const B=60, chunks=[];
-  for(let s=0;s<pts.length;s+=B) chunks.push(pts.slice(s,s+B));
-  const results=[];
-  for(let c=0;c<chunks.length;c+=3){ // at most 3 requests at a time
-    const part = await Promise.all(chunks.slice(c,c+3).map(ch=>getJSON(omURL(ch.map(p=>p[0]), ch.map(p=>p[1])))));
-    part.forEach(p=>results.push(...(Array.isArray(p)?p:[p])));
-  }
-  if(results.length!==pts.length) throw new Error('unexpected response size');
-  const times = results[0].hourly.time; L.t0=times[0]; L.nT=times.length;
-  KEYS.forEach((k,vi)=>{ const a=new Float32Array(L.nT*L.np);
-    results.forEach((r,p)=>{ const arr=r.hourly[VARS[vi]]; for(let t=0;t<L.nT;t++){ const v=arr[t]; a[t*L.np+p]= v==null?NaN:v; } });
-    L.f[k]=a; });
-  deriveLayer(L);
+  const L = Object.assign({}, spec, { idx, np:pts.length, pts, t0:0, nT:0, f:{}, at:Date.now(), todo:[] });
+  for(let s=0;s<pts.length;s+=CHUNK) L.todo.push(s);
+  if(!pts.length) L.empty=true;
   return L;
 }
-function demoLayer(L, pts){
-  // moving cloud bands so the interface can be explored offline
-  L.t0 = Math.floor(Date.now()/86400000)*86400; L.nT=96;
+// fetch the chunks still missing; stops early (keeping what it has) if the budget runs out
+async function fillLayer(L){
+  if(L.empty) return L;
+  if(DEMO) return demoLayer(L);
+  while(L.todo.length){
+    const s=L.todo[0], ch=L.pts.slice(s,s+CHUNK);
+    const res = await omGet(omURL(ch.map(p=>p[0]), ch.map(p=>p[1])), ch.length, VARS.length);
+    const list = Array.isArray(res)?res:[res];
+    if(list.length!==ch.length) throw new Error('unexpected response size');
+    if(!L.nT){ const times=list[0].hourly.time; L.t0=times[0]; L.nT=times.length; KEYS.forEach(k=>{ L.f[k]=new Float32Array(L.nT*L.np).fill(NaN); }); }
+    list.forEach((r,q)=>{ const p=s+q; KEYS.forEach((k,vi)=>{ const arr=r.hourly[VARS[vi]], a=L.f[k]; for(let t=0;t<L.nT;t++){ const v=arr[t]; a[t*L.np+p]= v==null?NaN:v; } }); });
+    L.todo.shift();
+  }
+  deriveLayer(L); L.at=Date.now();
+  return L;
+}
+function demoLayer(L){
+  L.t0 = Math.floor(Date.now()/86400000)*86400; L.nT=96; L.todo=[];
   KEYS.forEach(k=>L.f[k]=new Float32Array(L.nT*L.np));
-  pts.forEach(([lat,lon],p)=>{ for(let t=0;t<L.nT;t++){ const k=t*L.np+p, x=lon/12, y=lat/9, tt=(L.t0+t*3600)/3600;
+  L.pts.forEach(([lat,lon],p)=>{ for(let t=0;t<L.nT;t++){ const k=t*L.np+p, x=lon/12, y=lat/9, tt=(L.t0+t*3600)/3600;
     const band=Math.sin(x*2.2 - tt/16)*Math.cos(y*1.4 + tt/40);
     L.f.cloud[k]=clamp(50+70*band+15*Math.sin(tt/5+x*9),0,100); L.f.hcloud[k]=clamp(30+50*Math.sin(tt/9+y*4),0,100);
     L.f.rh[k]=clamp(65+25*Math.sin(tt/12*Math.PI+x*3),20,100); L.f.temp[k]=18-(lat-30)*0.7+6*Math.sin((tt%24-14)/24*2*Math.PI);
@@ -2446,19 +2527,39 @@ function demoLayer(L, pts){
 let idbP=null;
 function idb(){ if(idbP) return idbP; idbP=new Promise(res=>{ try{ const r=indexedDB.open('starcast',1); r.onupgradeneeded=()=>r.result.createObjectStore('wx'); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); return idbP; }
 async function cacheGet(key){ const db=await idb(); if(!db) return null; return new Promise(res=>{ try{ const q=db.transaction('wx').objectStore('wx').get(key); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null);}catch(e){res(null);} }); }
-async function cachePut(key, val){ const db=await idb(); if(!db) return; try{ db.transaction('wx','readwrite').objectStore('wx').put(val,key); }catch(e){} }
-function usable(L){ return L && (L.empty || (Date.now()-L.at < CACHE_MS && L.t0 <= S.times[0] && L.t0+(L.nT-1)*3600 >= S.times[71])); }
+async function cachePut(key, val){ const db=await idb(); if(!db) return; try{ const v=Object.assign({},val); delete v.pts; db.transaction('wx','readwrite').objectStore('wx').put(v,key); }catch(e){} }
+function usable(L){ return L && (L.empty || (!(L.todo&&L.todo.length) && Date.now()-L.at < CACHE_MS && L.t0 <= S.times[0] && L.t0+(L.nT-1)*3600 >= S.times[71])); }
 
+let coarseRetry=null;
 async function loadCoarse(force){
+  clearTimeout(coarseRetry);
+  if(!force && !WX.coarse){ const c=await cacheGet(COARSE.id); if(usable(c)){ WX.coarse=c; WX.at=c.at; WX.error=null; afterCoarse(); return; } }
   setStatus('loading','Loading forecast…');
-  if(!force){ const c=await cacheGet('coarse'); if(usable(c)){ WX.coarse=c; WX.at=c.at; afterCoarse('live'); return; } }
-  try{ WX.demo=false; const L=await fetchLayer(COARSE); WX.coarse=L; WX.at=L.at; cachePut('coarse',L); afterCoarse('live'); }
-  catch(err){ console.warn('Forecast fetch failed, using sample data:', err); WX.demo=true; WX.tiles.clear(); WX.coarse=await fetchLayer(COARSE); afterCoarse('demo'); }
+  const L = (WX.coarse && WX.coarse.todo && WX.coarse.todo.length && !force) ? Object.assign(WX.coarse, specPoints(COARSE)) : newLayer(COARSE);
+  try{
+    await fillLayer(L);
+    WX.coarse=L; WX.at=L.at; WX.error=null; if(!DEMO) cachePut(COARSE.id,L); afterCoarse();
+  }catch(err){
+    console.warn('Forecast loading stopped:', err);
+    if(L.nT) WX.coarse=L; // keep whatever arrived
+    if(err instanceof RateLimited){
+      WX.error={kind:'limit', until:err.until};
+      const when=fmtTime.format(new Date(err.until));
+      setStatus('demo', err.until-Date.now() > 3*3600e3 ? `Daily forecast limit reached; more data after ${when}` : `Pausing to stay within the free forecast limit; continuing at ${when}`);
+      coarseRetry=setTimeout(()=>loadCoarse(false), Math.max(5e3, err.until-Date.now()+2e3));
+    } else {
+      WX.error={kind:'network'};
+      setStatus('demo', 'Can’t reach the forecast service right now');
+      coarseRetry=setTimeout(()=>loadCoarse(false), 5*60e3);
+    }
+    S.grid = WX.coarse && WX.coarse.nT ? WX.coarse : null;
+    S.eval=null; render(); drawBand();
+    if(S.tab==='loc') renderPanel();
+  }
 }
-function afterCoarse(kind){
+function afterCoarse(){
   S.grid = WX.coarse;
-  if(kind==='live') setStatus('live', `Live forecast · updated ${fmtTime.format(new Date(WX.at))}`);
-  else setStatus('demo', 'Sample weather: forecast service unreachable');
+  setStatus('live', DEMO ? 'Sample weather (demo mode)' : `Live forecast · updated ${fmtTime.format(new Date(WX.at))}`);
   S.eval=null; render(); drawBand(); selectLocation(S.sel, {fly:false, keepView:true});
   scheduleTiles();
 }
@@ -2466,8 +2567,12 @@ async function loadTile(spec){
   if(WX.tiles.has(spec.id) && usable(WX.tiles.get(spec.id))) return WX.tiles.get(spec.id);
   if(WX.pending.has(spec.id)) return WX.pending.get(spec.id);
   const job=(async()=>{
-    let L = WX.demo ? null : await cacheGet(spec.id);
-    if(!usable(L)){ try{ L=await fetchLayer(spec); if(!WX.demo) cachePut(spec.id,L); }catch(e){ console.warn('tile failed',spec.id,e); L=null; } }
+    let L = DEMO ? null : await cacheGet(spec.id);
+    if(!usable(L)){
+      L = WX.tiles.get(spec.id); if(!L || !L.todo || !L.todo.length) L=newLayer(spec); else Object.assign(L, specPoints(spec));
+      try{ await fillLayer(L); if(!DEMO) cachePut(spec.id,L); }
+      catch(e){ if(!(e instanceof RateLimited)) console.warn('tile failed',spec.id,e); if(!L.nT) L=null; }
+    }
     if(L) WX.tiles.set(spec.id,L);
     WX.pending.delete(spec.id);
     return L;
@@ -2479,12 +2584,12 @@ async function ensureTilesAround(lat, lon, km){
   const dLat=km/111, dLon=km/(111*Math.max(0.2,Math.cos(lat*Math.PI/180))), want=new Map();
   for(let la=lat-dLat; la<=lat+dLat+TILE_DEG; la+=TILE_DEG) for(let lo=lon-dLon; lo<=lon+dLon+TILE_DEG; lo+=TILE_DEG){
     const sp=tileSpec(Math.min(la,lat+dLat), Math.min(lo,lon+dLon)); want.set(sp.id,sp); }
-  await Promise.all([...want.values()].map(loadTile));
+  for(const sp of want.values()) await loadTile(sp); // one at a time keeps within the per-minute limit
 }
 let tileTimer=null;
-function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 500); }
+function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 700); }
 async function loadVisibleTiles(){
-  if(!WX.coarse || proj.scale() < baseScale*4.5) return;
+  if(!WX.coarse || DEMO && false || proj.scale() < baseScale*5) return;
   const c=proj.invert([W/2,H/2]); if(!c) return;
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
@@ -2492,14 +2597,13 @@ async function loadVisibleTiles(){
     if(ll[1]<24||ll[1]>72||ll[0]<-170||ll[0]>-50) continue;
     const sp=tileSpec(ll[1],ll[0]); if(!want.has(sp.id)) want.set(sp.id,{sp,d:d3.geoDistance(ll,c)});
   }
-  const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,8).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
-  if(!list.length) return;
-  for(let k=0;k<list.length;k+=2){ await Promise.all(list.slice(k,k+2).map(loadTile)); render(); }
+  const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,4).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
+  for(const sp of list){ if(omWait(60)!==0) break; await loadTile(sp); render(); }
 }
 
 /* --- reading values --- */
 function layerValue(L, key, t, lat, lon){
-  if(!L || L.empty || !L.f[key]) return NaN;
+  if(!L || L.empty || !L.f[key] || !L.nT) return NaN;
   const tt = t + Math.round((S.times[0]-L.t0)/3600);
   if(tt<0 || tt>=L.nT) return NaN;
   const fi=(lat-L.lat0)/L.dLat, fj=(lon-L.lon0)/L.dLon;
@@ -2517,7 +2621,7 @@ function gridVal(key, t, lat, lon){
 }
 function setStatus(kind, text){
   const el = $('#status'); el.className = 'status '+kind;
-  el.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>` + (kind!=='loading' ? ` <button id="refreshBtn" type="button">Refresh</button>` : '');
+  el.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>` + (kind==='live' ? ` <button id="refreshBtn" type="button">Refresh</button>` : '');
   const b = $('#refreshBtn'); if(b) b.onclick = () => { WX.tiles.clear(); loadCoarse(true); };
 }
 
@@ -2535,6 +2639,136 @@ function lpVal(lat, lon, res){
   const t=lpTile(lat,lon,res||0.05), fi=(lat-t.la)/t.res, fj=(lon-t.lo)/t.res;
   const i=Math.min(Math.floor(fi),t.n-2), j=Math.min(Math.floor(fj),t.n-2), di=fi-i, dj=fj-j, a=t.a, n=t.n;
   return (a[i*n+j]*(1-dj)+a[i*n+j+1]*dj)*(1-di) + (a[(i+1)*n+j]*(1-dj)+a[(i+1)*n+j+1]*dj)*di;
+}
+
+/* ---- 25-basemap.js ---- */
+/* Base maps: the simple built-in map, or standard web map tiles (OpenStreetMap, topographic,
+   satellite, dark streets, NASA night lights) warped onto the globe. Each tile is cut into a grid of
+   triangles and each triangle is drawn with its own affine transform, which needs no pixel access,
+   so it works with any tile server. Lower-zoom tiles stand in while sharper ones load. */
+
+const BASEMAPS = [
+  { id:'simple', name:'Simple' },
+  { id:'osm', name:'OpenStreetMap', url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png', max:19, attr:'© OpenStreetMap contributors' },
+  { id:'topo', name:'Topographic', url:'https://tile.opentopomap.org/{z}/{x}/{y}.png', max:17, attr:'© OpenStreetMap contributors, SRTM · map style © OpenTopoMap (CC-BY-SA)' },
+  { id:'sat', name:'Satellite', url:'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', max:18, attr:'Imagery © Esri, Maxar, Earthstar Geographics' },
+  { id:'dark', name:'Dark streets', url:'https://basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png', max:19, attr:'© OpenStreetMap contributors © CARTO' },
+  { id:'night', name:'Night lights (NASA)', url:'https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/VIIRS_Black_Marble/default/2016-01-01/GoogleMapsCompatible_Level8/{z}/{y}/{x}.png', max:8, attr:'NASA Black Marble 2016 (VIIRS) via GIBS' }
+];
+S.basemap = store.get('basemap','simple');
+function currentBasemap(){ return BASEMAPS.find(b=>b.id===S.basemap) || BASEMAPS[0]; }
+
+const TILES = new Map(); let tileQueue=[], tileActive=0;
+function tileKey(bm,z,x,y){ return `${bm.id}/${z}/${x}/${y}`; }
+function requestTile(bm,z,x,y){
+  const k=tileKey(bm,z,x,y); let t=TILES.get(k);
+  if(t) return t;
+  t={ img:null, ok:false, err:false, z,x,y }; TILES.set(k,t);
+  tileQueue.push(()=>new Promise(res=>{
+    const img=new Image(); img.decoding='async';
+    img.onload=()=>{ t.img=img; t.ok=true; bm.fails=0; res(); render(); };
+    img.onerror=()=>{ t.err=true; bm.fails=(bm.fails||0)+1; res(); if(bm.fails===4) showAttribution(); };
+    img.src=bm.url.replace('{z}',z).replace('{x}',x).replace('{y}',y);
+  }));
+  pumpTiles();
+  if(TILES.size>900){ let n=0; for(const [kk,v] of TILES){ if(n++>300) break; if(v.ok||v.err) TILES.delete(kk); } }
+  return t;
+}
+function pumpTiles(){
+  while(tileActive<8 && tileQueue.length){ const job=tileQueue.pop(); tileActive++; job().then(()=>{ tileActive--; pumpTiles(); }); }
+}
+// a loaded tile, or a loaded ancestor plus the source rectangle that covers this tile
+function tileOrAncestor(bm,z,x,y){
+  for(let dz=0; dz<=4 && z-dz>=0; dz++){
+    const zz=z-dz, f=1<<dz, xx=Math.floor(x/f), yy=Math.floor(y/f);
+    const t=TILES.get(tileKey(bm,zz,xx,yy));
+    if(t && t.ok){ const size=256/f; return { img:t.img, sx:(x-xx*f)*size, sy:(y-yy*f)*size, s:size/256, iw:t.img.naturalWidth/256 }; }
+  }
+  return null;
+}
+const mercLat = yy => Math.atan(Math.sinh(Math.PI*(1-2*yy)))*180/Math.PI; // yy: 0..1 across the map
+const tileX = (lon,n) => Math.floor((lon+180)/360*n);
+const tileY = (lat,n) => { const r=clamp(lat,-85.05,85.05)*Math.PI/180; return Math.floor((1-Math.log(Math.tan(r)+1/Math.cos(r))/Math.PI)/2*n); };
+
+function drawBasemap(){
+  const bm=currentBasemap(); if(!bm.url) return false;
+  const r=proj.scale(), center=proj.invert(proj.translate());
+  let z=clamp(Math.round(Math.log2(r*2*Math.PI/256)+0.3), 1, bm.max);
+  // which tiles are visible: sample the screen
+  let minLat=90,maxLat=-90,minLon=180,maxLon=-180, any=false, poleN=false, poleS=false;
+  for(let i=0;i<=14;i++) for(let j=0;j<=14;j++){
+    const ll=proj.invert([W*j/14,H*i/14]); if(!ll||isNaN(ll[0])||!visiblePt(ll)) continue; any=true;
+    minLat=Math.min(minLat,ll[1]); maxLat=Math.max(maxLat,ll[1]); minLon=Math.min(minLon,ll[0]); maxLon=Math.max(maxLon,ll[0]);
+  }
+  const onScreen = ll => { const q=visiblePt(ll); return q && q[0]>=0 && q[0]<=W && q[1]>=0 && q[1]<=H; };
+  if(onScreen([0,89.9])) poleN=true; if(onScreen([0,-89.9])) poleS=true;
+  if(!any) return true;
+  if(poleN) maxLat=85; if(poleS) minLat=-85;
+  const wrap = poleN || poleS || (maxLon-minLon)>300;
+  let tiles;
+  for(;;){
+    const n=1<<z; tiles=[];
+    const x0= wrap?0:tileX(minLon,n), x1= wrap?n-1:tileX(maxLon,n), y0=tileY(Math.min(85,maxLat+1),n), y1=tileY(Math.max(-85,minLat-1),n);
+    for(let y=y0;y<=y1;y++) for(let x=x0;x<=x1;x++) tiles.push([x,y]);
+    if(tiles.length<=48 || z<=1) break; z--;
+  }
+  const n=1<<z, lo = quality!=='hi';
+  const cells = lo ? (z<=3?6:3) : (z<=3?12:z<=5?6:4);
+  ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip();
+  for(const [x,y] of tiles){
+    // tile corners must touch the visible hemisphere
+    const lonA=x/n*360-180, lonB=(x+1)/n*360-180, latA=mercLat(y/n), latB=mercLat((y+1)/n);
+    const mid=[(lonA+lonB)/2,(latA+latB)/2];
+    if(center && d3.geoDistance(mid,center) > Math.PI/2 + (lonB-lonA)*Math.PI/180) continue;
+    if(!lo) requestTile(bm,z,x,y); else if(!TILES.has(tileKey(bm,z,x,y))) requestTile(bm,z,x,y);
+    const src=tileOrAncestor(bm,z,x,y); if(!src) continue;
+    // grid of projected points
+    const P=[];
+    for(let i=0;i<=cells;i++){ const row=[]; for(let j=0;j<=cells;j++){
+      const lon=lonA+(lonB-lonA)*j/cells, lat=mercLat((y+i/cells)/n);
+      row.push(center && d3.geoDistance([lon,lat],center) < Math.PI/2-0.002 ? proj([lon,lat]) : null);
+    } P.push(row); }
+    const k=256/cells;
+    for(let i=0;i<cells;i++) for(let j=0;j<cells;j++){
+      const a=P[i][j], b=P[i][j+1], c=P[i+1][j], d=P[i+1][j+1];
+      const S0=[j*k,i*k], S1=[(j+1)*k,i*k], S2=[j*k,(i+1)*k], S3=[(j+1)*k,(i+1)*k];
+      if(a&&b&&c) drawTri(src, S0,S1,S2, a,b,c);
+      if(b&&d&&c) drawTri(src, S1,S3,S2, b,d,c);
+    }
+  }
+  ctx.restore();
+  return true;
+}
+function drawTri(src, s0,s1,s2, d0,d1,d2){
+  // map source pixels (in this tile's 256-px space) to the ancestor image actually loaded
+  const m=src.s*src.iw, ox=src.sx*src.iw, oy=src.sy*src.iw;
+  const S=[[ox+s0[0]*m, oy+s0[1]*m],[ox+s1[0]*m, oy+s1[1]*m],[ox+s2[0]*m, oy+s2[1]*m]];
+  const den = S[0][0]*(S[1][1]-S[2][1]) + S[1][0]*(S[2][1]-S[0][1]) + S[2][0]*(S[0][1]-S[1][1]);
+  if(Math.abs(den)<1e-9) return;
+  const solve = (p0,p1,p2) => [
+    (p0*(S[1][1]-S[2][1]) + p1*(S[2][1]-S[0][1]) + p2*(S[0][1]-S[1][1]))/den,
+    (p0*(S[2][0]-S[1][0]) + p1*(S[0][0]-S[2][0]) + p2*(S[1][0]-S[0][0]))/den,
+    (p0*(S[1][0]*S[2][1]-S[2][0]*S[1][1]) + p1*(S[2][0]*S[0][1]-S[0][0]*S[2][1]) + p2*(S[0][0]*S[1][1]-S[1][0]*S[0][1]))/den ];
+  const [a,c,e]=solve(d0[0],d1[0],d2[0]), [b,d,f]=solve(d0[1],d1[1],d2[1]);
+  // clip to the triangle, grown by half a pixel so neighbours overlap without seams
+  const cx=(d0[0]+d1[0]+d2[0])/3, cy=(d0[1]+d1[1]+d2[1])/3, g=pt=>{ const dx=pt[0]-cx, dy=pt[1]-cy, l=Math.hypot(dx,dy)||1; return [pt[0]+dx/l*0.6, pt[1]+dy/l*0.6]; };
+  const q0=g(d0), q1=g(d1), q2=g(d2);
+  ctx.save();
+  ctx.beginPath(); ctx.moveTo(q0[0],q0[1]); ctx.lineTo(q1[0],q1[1]); ctx.lineTo(q2[0],q2[1]); ctx.closePath(); ctx.clip();
+  ctx.transform(a,b,c,d,e,f);
+  ctx.drawImage(src.img,0,0);
+  ctx.restore();
+}
+function showAttribution(){
+  const el=$('#attrib'); if(!el) return; const bm=currentBasemap();
+  el.hidden = !bm.url;
+  el.textContent = bm.url ? (bm.fails>=4 && ![...TILES.values()].some(t=>t.ok) ? `${bm.name} tiles could not be loaded right now.` : bm.attr) : '';
+}
+function basemapHTML(){
+  return `<div class="lgroup"><h3>Base map</h3><div class="chips">${BASEMAPS.map(b=>`<button class="chip radio" data-bm="${b.id}" aria-pressed="${b.id===S.basemap}"><span class="sw" style="background:${({simple:'#142033',osm:'#e8e0d0',topo:'#c9d6a8',sat:'#3b4a2e',dark:'#262b33',night:'#e9b14a'})[b.id]}"></span>${b.name}</button>`).join('')}</div></div>`;
+}
+function wireBasemap(root){
+  root.querySelectorAll('[data-bm]').forEach(b=>b.onclick=()=>{ S.basemap=b.dataset.bm; store.set('basemap',S.basemap); buildLayers(); showAttribution(); render(); });
 }
 
 /* ---- 30-locations.js ---- */
@@ -3128,13 +3362,13 @@ async function loadConfidence(lat, lon){
   const key=lat.toFixed(3)+','+lon.toFixed(3)+','+S.times[0];
   if(S.conf.key===key) return; S.conf={key, data:null};
   try{
-    const j = await getJSON(`${API}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=cloud_cover&models=${MODELS.map(m=>m[0]).join(',')}&forecast_days=4&timeformat=unixtime&timezone=GMT`);
+    const j = await omGet(`${API}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=cloud_cover&models=${MODELS.map(m=>m[0]).join(',')}&forecast_days=4&timeformat=unixtime&timezone=GMT`, 1, MODELS.length);
     const off=j.hourly.time.indexOf(S.times[0]); if(off<0) return;
     const data={};
     MODELS.forEach(([m])=>{ const a=j.hourly['cloud_cover_'+m]; if(a) data[m]=S.times.map((_,t)=>a[off+t]==null?NaN:a[off+t]); });
     if(S.conf.key!==key || !Object.keys(data).length) return;
     S.conf.data=data; if(S.tab==='loc'){ const b=$('#pbody'), y=b.scrollTop; renderPanel(); b.scrollTop=y; }
-  }catch(e){ /* confidence is optional */ }
+  }catch(e){ S.conf.key=''; /* optional; retried on the next visit */ }
 }
 function confAt(t){
   const d=S.conf.data; if(!d) return null;
@@ -3219,7 +3453,7 @@ function wireInstall(){ const b=$('#installBtn'); if(b) b.onclick=async()=>{ if(
 window.addEventListener('resize', ()=>{ clearTimeout(resize.t); resize.t=setTimeout(resize,80); });
 applyTheme(store.get('theme','auto'));
 { const hm = homeSpot(); if(hm){ S.sel = {lat:hm.lat, lon:hm.lon, name:hm.name}; } }
-buildLayers(); resize();
+buildLayers(); showAttribution(); resize();
 proj.rotate([-S.sel.lon, -S.sel.lat, 0]);
 setTime(nowIndex());
 renderPanel();

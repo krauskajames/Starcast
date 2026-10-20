@@ -7,13 +7,13 @@ async function loadConfidence(lat, lon){
   const key=lat.toFixed(3)+','+lon.toFixed(3)+','+S.times[0];
   if(S.conf.key===key) return; S.conf={key, data:null};
   try{
-    const j = await getJSON(`${API}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=cloud_cover&models=${MODELS.map(m=>m[0]).join(',')}&forecast_days=4&timeformat=unixtime&timezone=GMT`);
+    const j = await omGet(`${API}?latitude=${lat.toFixed(4)}&longitude=${lon.toFixed(4)}&hourly=cloud_cover&models=${MODELS.map(m=>m[0]).join(',')}&forecast_days=4&timeformat=unixtime&timezone=GMT`, 1, MODELS.length);
     const off=j.hourly.time.indexOf(S.times[0]); if(off<0) return;
     const data={};
     MODELS.forEach(([m])=>{ const a=j.hourly['cloud_cover_'+m]; if(a) data[m]=S.times.map((_,t)=>a[off+t]==null?NaN:a[off+t]); });
     if(S.conf.key!==key || !Object.keys(data).length) return;
     S.conf.data=data; if(S.tab==='loc'){ const b=$('#pbody'), y=b.scrollTop; renderPanel(); b.scrollTop=y; }
-  }catch(e){ /* confidence is optional */ }
+  }catch(e){ S.conf.key=''; /* optional; retried on the next visit */ }
 }
 function confAt(t){
   const d=S.conf.data; if(!d) return null;

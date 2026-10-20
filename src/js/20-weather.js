@@ -1,11 +1,15 @@
 /* Weather data for North America (contiguous US, Alaska, Canada).
-   A coarse continental grid loads first; detailed 0.5-degree tiles load for whatever
-   region you zoom into. Everything is cached in the browser (IndexedDB) for 90 minutes. */
+   Open-Meteo's free tier allows 600 calls a minute, 5,000 an hour and 10,000 a day, and a
+   request for many places counts once per place. So Starcast keeps a running budget below
+   those limits, loads a light continental grid first, adds detail only for the area you
+   zoom into, and caches everything in the browser (IndexedDB) for 90 minutes.
+   If data can't be loaded, the map shows no weather rather than made-up weather. */
 
 const VARS = ['cloud_cover','cloud_cover_high','relative_humidity_2m','dew_point_2m','temperature_2m','wind_speed_10m','wind_speed_250hPa','wind_speed_500hPa'];
 const KEYS = ['cloud','hcloud','rh','td','temp','w10','j250','w500'];
 const API = 'https://api.open-meteo.com/v1/forecast';
 const CACHE_MS = 90*60e3;
+const DEMO = /[?&]demo\b/.test(location.search); // sample weather only when asked for (testing)
 function omURL(lats, lons, days){
   return `${API}?latitude=${lats.join(',')}&longitude=${lons.join(',')}&hourly=${VARS.join(',')}&forecast_days=${days||4}&timeformat=unixtime&timezone=GMT`;
 }
@@ -14,6 +18,38 @@ async function getJSON(url, signal){
   if(!r.ok) throw new Error('HTTP '+r.status);
   return r.json();
 }
+
+/* --- Open-Meteo budget: stay well under the free limits --- */
+const LIMITS = { minute:420, hour:3800, day:8500 };
+const OM = { use: store.get('omUse', []), blockedUntil: store.get('omBlocked', 0), reason:'' };
+function omUsed(ms){ const t=Date.now()-ms; return OM.use.reduce((s,u)=>u[0]>t?s+u[1]:s,0); }
+function omWait(w){
+  // milliseconds until w more weighted calls fit inside all three windows (0 = now)
+  if(Date.now() < OM.blockedUntil) return OM.blockedUntil-Date.now();
+  if(omUsed(864e5)+w > LIMITS.day) return -1;
+  if(omUsed(36e5)+w > LIMITS.hour) return 10*60e3;
+  if(omUsed(6e4)+w > LIMITS.minute) return 62e3;
+  return 0;
+}
+function omSpend(w){ const now=Date.now(); OM.use = OM.use.filter(u=>u[0]>now-864e5); OM.use.push([now, Math.round(w*10)/10]); store.set('omUse', OM.use); }
+class RateLimited extends Error { constructor(until, reason){ super(reason); this.until=until; } }
+// weight per Open-Meteo: places × (variables / 10), minimum one week of data
+async function omGet(url, places, nVars, signal){
+  const w = places * Math.max(0.1, nVars/10);
+  const wait = omWait(w);
+  if(wait !== 0) throw new RateLimited(wait<0 ? nextUtcMidnight() : Date.now()+wait, wait<0 ? 'daily' : 'budget');
+  omSpend(w);
+  const r = await fetch(url, {signal});
+  if(r.status === 429){
+    let reason=''; try{ reason=(await r.json()).reason||''; }catch(e){}
+    const until = /daily/i.test(reason) ? nextUtcMidnight() : /hour/i.test(reason) ? Date.now()+ (60-new Date().getMinutes())*60e3 + 30e3 : Date.now()+65e3;
+    OM.blockedUntil = until; OM.reason = reason; store.set('omBlocked', until);
+    throw new RateLimited(until, reason || 'rate limit');
+  }
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  return r.json();
+}
+function nextUtcMidnight(){ const d=new Date(); return Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()+1) + 60e3; }
 
 /* --- land mask: US states (detailed) + Canada --- */
 const US_STATES = topojson.feature(GEO.states, GEO.states.objects.states).features;
@@ -34,13 +70,13 @@ function nearNA(lat, lon, dLat, dLon){
 }
 
 /* --- grid layers --- */
-const COARSE = { id:'coarse', lat0:24, lon0:-170, dLat:2.5, dLon:3, nLat:20, nLon:40 };
+const COARSE = { id:'coarse2', lat0:24, lon0:-168, dLat:4, dLon:5, nLat:13, nLon:24 };
 const TILE_DEG = 5, FINE = 0.5;
 function tileSpec(lat, lon){
   const la = Math.floor(lat/TILE_DEG)*TILE_DEG, lo = Math.floor(lon/TILE_DEG)*TILE_DEG;
   return { id:`t${la}_${lo}`, lat0:la, lon0:lo, dLat:FINE, dLon:FINE, nLat:TILE_DEG/FINE+1, nLon:TILE_DEG/FINE+1 };
 }
-const WX = { coarse:null, tiles:new Map(), pending:new Map(), demo:false, at:0 };
+const WX = { coarse:null, tiles:new Map(), pending:new Map(), at:0, error:null };
 
 function specPoints(spec){
   const pts=[], idx=new Int32Array(spec.nLat*spec.nLon).fill(-1);
@@ -55,31 +91,34 @@ function deriveLayer(L){
   const n = L.nT*L.np; L.f.seeing=new Float32Array(n); L.f.transp=new Float32Array(n);
   for(let k=0;k<n;k++){ L.f.seeing[k]=C.estSeeing(L.f.j250[k],L.f.w500[k],L.f.w10[k]); L.f.transp[k]=C.estTransparency(L.f.hcloud[k],L.f.rh[k],null); }
 }
-async function fetchLayer(spec){
+const CHUNK = 50;
+function newLayer(spec){
   const {pts, idx} = specPoints(spec);
-  const L = Object.assign({}, spec, { idx, np:pts.length, t0:0, nT:0, f:{}, at:Date.now() });
-  if(!pts.length){ L.empty=true; return L; }
-  if(WX.demo) return demoLayer(L, pts);
-  const B=60, chunks=[];
-  for(let s=0;s<pts.length;s+=B) chunks.push(pts.slice(s,s+B));
-  const results=[];
-  for(let c=0;c<chunks.length;c+=3){ // at most 3 requests at a time
-    const part = await Promise.all(chunks.slice(c,c+3).map(ch=>getJSON(omURL(ch.map(p=>p[0]), ch.map(p=>p[1])))));
-    part.forEach(p=>results.push(...(Array.isArray(p)?p:[p])));
-  }
-  if(results.length!==pts.length) throw new Error('unexpected response size');
-  const times = results[0].hourly.time; L.t0=times[0]; L.nT=times.length;
-  KEYS.forEach((k,vi)=>{ const a=new Float32Array(L.nT*L.np);
-    results.forEach((r,p)=>{ const arr=r.hourly[VARS[vi]]; for(let t=0;t<L.nT;t++){ const v=arr[t]; a[t*L.np+p]= v==null?NaN:v; } });
-    L.f[k]=a; });
-  deriveLayer(L);
+  const L = Object.assign({}, spec, { idx, np:pts.length, pts, t0:0, nT:0, f:{}, at:Date.now(), todo:[] });
+  for(let s=0;s<pts.length;s+=CHUNK) L.todo.push(s);
+  if(!pts.length) L.empty=true;
   return L;
 }
-function demoLayer(L, pts){
-  // moving cloud bands so the interface can be explored offline
-  L.t0 = Math.floor(Date.now()/86400000)*86400; L.nT=96;
+// fetch the chunks still missing; stops early (keeping what it has) if the budget runs out
+async function fillLayer(L){
+  if(L.empty) return L;
+  if(DEMO) return demoLayer(L);
+  while(L.todo.length){
+    const s=L.todo[0], ch=L.pts.slice(s,s+CHUNK);
+    const res = await omGet(omURL(ch.map(p=>p[0]), ch.map(p=>p[1])), ch.length, VARS.length);
+    const list = Array.isArray(res)?res:[res];
+    if(list.length!==ch.length) throw new Error('unexpected response size');
+    if(!L.nT){ const times=list[0].hourly.time; L.t0=times[0]; L.nT=times.length; KEYS.forEach(k=>{ L.f[k]=new Float32Array(L.nT*L.np).fill(NaN); }); }
+    list.forEach((r,q)=>{ const p=s+q; KEYS.forEach((k,vi)=>{ const arr=r.hourly[VARS[vi]], a=L.f[k]; for(let t=0;t<L.nT;t++){ const v=arr[t]; a[t*L.np+p]= v==null?NaN:v; } }); });
+    L.todo.shift();
+  }
+  deriveLayer(L); L.at=Date.now();
+  return L;
+}
+function demoLayer(L){
+  L.t0 = Math.floor(Date.now()/86400000)*86400; L.nT=96; L.todo=[];
   KEYS.forEach(k=>L.f[k]=new Float32Array(L.nT*L.np));
-  pts.forEach(([lat,lon],p)=>{ for(let t=0;t<L.nT;t++){ const k=t*L.np+p, x=lon/12, y=lat/9, tt=(L.t0+t*3600)/3600;
+  L.pts.forEach(([lat,lon],p)=>{ for(let t=0;t<L.nT;t++){ const k=t*L.np+p, x=lon/12, y=lat/9, tt=(L.t0+t*3600)/3600;
     const band=Math.sin(x*2.2 - tt/16)*Math.cos(y*1.4 + tt/40);
     L.f.cloud[k]=clamp(50+70*band+15*Math.sin(tt/5+x*9),0,100); L.f.hcloud[k]=clamp(30+50*Math.sin(tt/9+y*4),0,100);
     L.f.rh[k]=clamp(65+25*Math.sin(tt/12*Math.PI+x*3),20,100); L.f.temp[k]=18-(lat-30)*0.7+6*Math.sin((tt%24-14)/24*2*Math.PI);
@@ -92,19 +131,39 @@ function demoLayer(L, pts){
 let idbP=null;
 function idb(){ if(idbP) return idbP; idbP=new Promise(res=>{ try{ const r=indexedDB.open('starcast',1); r.onupgradeneeded=()=>r.result.createObjectStore('wx'); r.onsuccess=()=>res(r.result); r.onerror=()=>res(null); }catch(e){ res(null); } }); return idbP; }
 async function cacheGet(key){ const db=await idb(); if(!db) return null; return new Promise(res=>{ try{ const q=db.transaction('wx').objectStore('wx').get(key); q.onsuccess=()=>res(q.result||null); q.onerror=()=>res(null);}catch(e){res(null);} }); }
-async function cachePut(key, val){ const db=await idb(); if(!db) return; try{ db.transaction('wx','readwrite').objectStore('wx').put(val,key); }catch(e){} }
-function usable(L){ return L && (L.empty || (Date.now()-L.at < CACHE_MS && L.t0 <= S.times[0] && L.t0+(L.nT-1)*3600 >= S.times[71])); }
+async function cachePut(key, val){ const db=await idb(); if(!db) return; try{ const v=Object.assign({},val); delete v.pts; db.transaction('wx','readwrite').objectStore('wx').put(v,key); }catch(e){} }
+function usable(L){ return L && (L.empty || (!(L.todo&&L.todo.length) && Date.now()-L.at < CACHE_MS && L.t0 <= S.times[0] && L.t0+(L.nT-1)*3600 >= S.times[71])); }
 
+let coarseRetry=null;
 async function loadCoarse(force){
+  clearTimeout(coarseRetry);
+  if(!force && !WX.coarse){ const c=await cacheGet(COARSE.id); if(usable(c)){ WX.coarse=c; WX.at=c.at; WX.error=null; afterCoarse(); return; } }
   setStatus('loading','Loading forecast…');
-  if(!force){ const c=await cacheGet('coarse'); if(usable(c)){ WX.coarse=c; WX.at=c.at; afterCoarse('live'); return; } }
-  try{ WX.demo=false; const L=await fetchLayer(COARSE); WX.coarse=L; WX.at=L.at; cachePut('coarse',L); afterCoarse('live'); }
-  catch(err){ console.warn('Forecast fetch failed, using sample data:', err); WX.demo=true; WX.tiles.clear(); WX.coarse=await fetchLayer(COARSE); afterCoarse('demo'); }
+  const L = (WX.coarse && WX.coarse.todo && WX.coarse.todo.length && !force) ? Object.assign(WX.coarse, specPoints(COARSE)) : newLayer(COARSE);
+  try{
+    await fillLayer(L);
+    WX.coarse=L; WX.at=L.at; WX.error=null; if(!DEMO) cachePut(COARSE.id,L); afterCoarse();
+  }catch(err){
+    console.warn('Forecast loading stopped:', err);
+    if(L.nT) WX.coarse=L; // keep whatever arrived
+    if(err instanceof RateLimited){
+      WX.error={kind:'limit', until:err.until};
+      const when=fmtTime.format(new Date(err.until));
+      setStatus('demo', err.until-Date.now() > 3*3600e3 ? `Daily forecast limit reached; more data after ${when}` : `Pausing to stay within the free forecast limit; continuing at ${when}`);
+      coarseRetry=setTimeout(()=>loadCoarse(false), Math.max(5e3, err.until-Date.now()+2e3));
+    } else {
+      WX.error={kind:'network'};
+      setStatus('demo', 'Can’t reach the forecast service right now');
+      coarseRetry=setTimeout(()=>loadCoarse(false), 5*60e3);
+    }
+    S.grid = WX.coarse && WX.coarse.nT ? WX.coarse : null;
+    S.eval=null; render(); drawBand();
+    if(S.tab==='loc') renderPanel();
+  }
 }
-function afterCoarse(kind){
+function afterCoarse(){
   S.grid = WX.coarse;
-  if(kind==='live') setStatus('live', `Live forecast · updated ${fmtTime.format(new Date(WX.at))}`);
-  else setStatus('demo', 'Sample weather: forecast service unreachable');
+  setStatus('live', DEMO ? 'Sample weather (demo mode)' : `Live forecast · updated ${fmtTime.format(new Date(WX.at))}`);
   S.eval=null; render(); drawBand(); selectLocation(S.sel, {fly:false, keepView:true});
   scheduleTiles();
 }
@@ -112,8 +171,12 @@ async function loadTile(spec){
   if(WX.tiles.has(spec.id) && usable(WX.tiles.get(spec.id))) return WX.tiles.get(spec.id);
   if(WX.pending.has(spec.id)) return WX.pending.get(spec.id);
   const job=(async()=>{
-    let L = WX.demo ? null : await cacheGet(spec.id);
-    if(!usable(L)){ try{ L=await fetchLayer(spec); if(!WX.demo) cachePut(spec.id,L); }catch(e){ console.warn('tile failed',spec.id,e); L=null; } }
+    let L = DEMO ? null : await cacheGet(spec.id);
+    if(!usable(L)){
+      L = WX.tiles.get(spec.id); if(!L || !L.todo || !L.todo.length) L=newLayer(spec); else Object.assign(L, specPoints(spec));
+      try{ await fillLayer(L); if(!DEMO) cachePut(spec.id,L); }
+      catch(e){ if(!(e instanceof RateLimited)) console.warn('tile failed',spec.id,e); if(!L.nT) L=null; }
+    }
     if(L) WX.tiles.set(spec.id,L);
     WX.pending.delete(spec.id);
     return L;
@@ -125,12 +188,12 @@ async function ensureTilesAround(lat, lon, km){
   const dLat=km/111, dLon=km/(111*Math.max(0.2,Math.cos(lat*Math.PI/180))), want=new Map();
   for(let la=lat-dLat; la<=lat+dLat+TILE_DEG; la+=TILE_DEG) for(let lo=lon-dLon; lo<=lon+dLon+TILE_DEG; lo+=TILE_DEG){
     const sp=tileSpec(Math.min(la,lat+dLat), Math.min(lo,lon+dLon)); want.set(sp.id,sp); }
-  await Promise.all([...want.values()].map(loadTile));
+  for(const sp of want.values()) await loadTile(sp); // one at a time keeps within the per-minute limit
 }
 let tileTimer=null;
-function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 500); }
+function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 700); }
 async function loadVisibleTiles(){
-  if(!WX.coarse || proj.scale() < baseScale*4.5) return;
+  if(!WX.coarse || DEMO && false || proj.scale() < baseScale*5) return;
   const c=proj.invert([W/2,H/2]); if(!c) return;
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
@@ -138,14 +201,13 @@ async function loadVisibleTiles(){
     if(ll[1]<24||ll[1]>72||ll[0]<-170||ll[0]>-50) continue;
     const sp=tileSpec(ll[1],ll[0]); if(!want.has(sp.id)) want.set(sp.id,{sp,d:d3.geoDistance(ll,c)});
   }
-  const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,8).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
-  if(!list.length) return;
-  for(let k=0;k<list.length;k+=2){ await Promise.all(list.slice(k,k+2).map(loadTile)); render(); }
+  const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,4).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
+  for(const sp of list){ if(omWait(60)!==0) break; await loadTile(sp); render(); }
 }
 
 /* --- reading values --- */
 function layerValue(L, key, t, lat, lon){
-  if(!L || L.empty || !L.f[key]) return NaN;
+  if(!L || L.empty || !L.f[key] || !L.nT) return NaN;
   const tt = t + Math.round((S.times[0]-L.t0)/3600);
   if(tt<0 || tt>=L.nT) return NaN;
   const fi=(lat-L.lat0)/L.dLat, fj=(lon-L.lon0)/L.dLon;
@@ -163,7 +225,7 @@ function gridVal(key, t, lat, lon){
 }
 function setStatus(kind, text){
   const el = $('#status'); el.className = 'status '+kind;
-  el.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>` + (kind!=='loading' ? ` <button id="refreshBtn" type="button">Refresh</button>` : '');
+  el.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>` + (kind==='live' ? ` <button id="refreshBtn" type="button">Refresh</button>` : '');
   const b = $('#refreshBtn'); if(b) b.onclick = () => { WX.tiles.clear(); loadCoarse(true); };
 }
 
