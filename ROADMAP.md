@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 20, 2026 · Current version: v1.1
+Last updated: October 20, 2026 · Current version: v2.0
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -26,6 +26,7 @@ Last updated: October 20, 2026 · Current version: v1.1
 | Wisconsin outline, cities, Newport State Park (Dark Sky Park), Yerkes Observatory | ✅ | |
 | 72-hour time slider with play button | ✅ | Bar is shaded by darkness and cloud at the selected spot |
 | Red night-vision mode | ✅ | |
+| Light, dark and automatic themes | ✅ | Added v2.0 |
 | Weather layers for the whole globe | 💡 | Needs a server to pre-process global model data |
 | Wind-particle animation like nullschool (jet stream) | 💡 | |
 
@@ -40,8 +41,9 @@ Last updated: October 20, 2026 · Current version: v1.1
 | High cloud | ✅ | |
 | Jet stream (250 hPa wind) | ✅ | |
 | Dew risk (temperature vs dew point) | ✅ | |
-| Light pollution | 🔜 | Satellite-derived sky-brightness map |
-| Aurora forecast (NOAA) | 🔜 | Cross-checked with local cloud cover |
+| Light pollution | ✅ | Added v2.0; city-glow model (Walker's law) over 48 Upper Midwest cities |
+| Light pollution from satellite night-lights data | 💡 | Would refine the city-glow model |
+| Aurora forecast (NOAA) | ✅ | Added v2.0; globe layer, Kp row in the forecast strip, aurora line in alerts |
 | Forecast confidence (agreement between HRRR, GFS and ECMWF) | 💡 | |
 | Smoke | 💡 | |
 
@@ -53,6 +55,7 @@ Last updated: October 20, 2026 · Current version: v1.1
 | Sunlit side and "Sun overhead" point | ✅ | Added v1.1 |
 | Planet visibility zones: Mercury, Venus, Mars, Jupiter, Saturn | ✅ | Where each is up while the sky is dark enough |
 | Moon-up zone | ✅ | |
+| Aurora oval: NOAA OVATION for the next hour, Kp forecast beyond | ✅ | Added v2.0 |
 | "Planet overhead" points | ✅ | |
 | Visibility zones for comets and bright deep-sky objects | 💡 | |
 
@@ -64,6 +67,9 @@ Last updated: October 20, 2026 · Current version: v1.1
 | Snapshot cards for the selected hour | ✅ | |
 | Alert preview message ("Viewing conditions are great from 9–11 pm at My Backyard for viewing the rings of Saturn") | ✅ | Real delivery is in section 8 |
 | Works outside Wisconsin (spot forecast only) | ✅ | |
+| Aurora chance per hour for your latitude | ✅ | Added v2.0 |
+| "Where to go": darkest, clearest public parks and forests within 30–120 miles, with directions | ✅ | Added v2.0; OpenStreetMap park data |
+| Driving times and park opening hours | 💡 | Currently straight-line distance plus a reminder to check hours |
 | Solar observing days and clear spells | ✅ | Added v1.1; only with a solar filter in your gear, otherwise a safety warning |
 | Sunspot and solar activity information | 💡 | |
 
@@ -93,6 +99,7 @@ Last updated: October 20, 2026 · Current version: v1.1
 | Filters (UHC, OIII, H-beta, light pollution, Moon, solar, color) | ✅ | Added v1.1; UHC preloaded |
 | Interests: naked eye, planets, Moon, deep sky, doubles, meteors, astrophotography, solar | ✅ | Solar added v1.1 |
 | Sky darkness (Bortle class) per saved location | ✅ | |
+| Estimated Bortle class for any spot in the Upper Midwest | ✅ | Added v2.0 |
 | Binoculars as a separate instrument | 💡 | |
 | Multiple telescope profiles | 💡 | |
 
@@ -113,8 +120,10 @@ Last updated: October 20, 2026 · Current version: v1.1
 | Feature | Status | Notes |
 |---|---|---|
 | Save locations with names and sky darkness | ✅ | Stored in the browser on one device |
-| Email or phone alerts for saved locations | 🔜 | Plan: scheduled job on GitHub Actions checks the forecast and sends the alert-preview message |
-| "Best clear, dark public land within driving range" | 🔜 | USGS public-lands data plus light-pollution and cloud layers |
+| Email or phone alerts for saved locations | ✅ | Added v2.0; GitHub Actions job, phone push via ntfy and/or email. One-time setup in README |
+| Aurora alerts | ✅ | Added v2.0; evening check |
+| Alert settings edited inside the app without copying to GitHub | 💡 | Needs accounts or a small server |
+| "Best clear, dark public land within driving range" | ✅ | Added v2.0; see section 4 |
 | Sync saved spots and gear across devices (accounts) | 💡 | |
 
 ## 9. Horizon and site
@@ -137,7 +146,7 @@ Last updated: October 20, 2026 · Current version: v1.1
 | Feature | Status | Notes |
 |---|---|---|
 | Single-file web app | ✅ | |
-| Free web hosting with a link that works on your phone | 🔜 | GitHub Pages |
+| Free web hosting with a link that works on your phone | 🔜 | Ready for GitHub Pages; steps in README |
 | Installable on a phone home screen (web app) | 💡 | |
 | Phone app | 💡 | |
 
@@ -145,5 +154,6 @@ Last updated: October 20, 2026 · Current version: v1.1
 
 ## Version history
 
+- **v2.0 (Oct 20, 2026):** Light and dark themes, light-pollution layer and Bortle estimates, aurora layer and forecasts, "Where to go" for dark public land, real alerts by phone or email through GitHub Actions.
 - **v1.1 (Oct 20, 2026):** Filters with UHC advice, Mars seasons and dust-storm season, Saturn ring tilt, Sun overlay, solar observing interest and forecasts, planet status card, forecast-check log, this feature log.
 - **v1 (Oct 20, 2026):** Globe, Wisconsin weather layers, planet visibility, spot forecast strip, target scoring, alert preview, calendar, gear, saved locations.

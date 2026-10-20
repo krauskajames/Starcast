@@ -1,0 +1,37 @@
+name: Starcast alerts
+
+on:
+  schedule:
+    - cron: '35 20 * * *'   # daily viewing check: 3:35 pm CDT / 2:35 pm CST
+    - cron: '35 1 * * *'    # evening aurora check: 8:35 pm CDT / 7:35 pm CST
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: 'daily, evening (aurora only), or test (always sends)'
+        required: true
+        default: test
+        type: choice
+        options: [test, daily, evening]
+
+jobs:
+  alerts:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: alerts
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm install --no-audit --no-fund
+      - name: Check forecast and send alerts
+        run: node check.mjs --mode=${{ github.event.inputs.mode || (github.event.schedule == '35 1 * * *' && 'evening' || 'daily') }}
+        env:
+          ALERTS_CONFIG: ${{ secrets.ALERTS_CONFIG }}
+          NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_PORT: ${{ secrets.SMTP_PORT }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+          ALERT_EMAIL_TO: ${{ secrets.ALERT_EMAIL_TO }}

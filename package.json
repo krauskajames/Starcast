@@ -1,0 +1,16 @@
+{
+  "name": "starcast",
+  "version": "2.0.0",
+  "private": true,
+  "description": "Astronomy viewing-conditions globe. Builds the single-file app (index.html) from src/.",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "devDependencies": {
+    "astronomy-engine": "2.1.19",
+    "d3": "7.9.0",
+    "topojson-client": "3.1.0",
+    "us-atlas": "3.0.1",
+    "world-atlas": "2.0.2"
+  }
+}

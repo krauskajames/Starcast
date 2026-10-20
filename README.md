@@ -93,27 +93,24 @@ Everything you enter (saved locations, gear, settings and forecast checks) stays
 
 ## Hosting
 
-Starcast is a static site, so any static host works. For GitHub Pages:
-
-1. Put everything in this folder in a public repository, keeping the `alerts` and `.github` folders. The `.github` folder may be hidden on your computer; GitHub's "Add file → Upload files" accepts it if you drag the whole folder in.
-2. Go to **Settings → Pages** and deploy from the `main` branch, `/ (root)` folder.
-3. The app appears at `https://YOUR-USERNAME.github.io/REPOSITORY-NAME/`.
-
-To update the app, replace `index.html`. To update alerts, replace the files in `alerts/`.
+This repository is set up for GitHub Pages: go to **Settings → Pages** and deploy from the `main` branch, `/ (root)` folder. The app appears at `https://krauskajames.github.io/starcast/`, and updates a minute or two after each commit.
 
 ## Files
 
 | File | What it is |
 |---|---|
-| `index.html` | The whole app: page, styles, code, libraries and map data in one file |
+| `index.html` | The whole app in one file, built from `src/`. This is what GitHub Pages serves |
+| `src/app.html` | The app's page, styles and interface code |
+| `src/core.js` | Starcast's astronomy, forecast and scoring engine, shared by the app and the alert job |
+| `build.mjs`, `package.json` | Build script: `npm install`, then `npm run build` rebuilds `index.html` |
 | `alerts/check.mjs` | The alert job: fetches forecasts and sends notifications |
-| `alerts/core.js` | Starcast's astronomy and scoring engine, shared with the app |
-| `alerts/package.json` | Libraries the alert job needs |
+| `alerts/core.js` | Copy of the engine for the alert job, made by the build |
 | `.github/workflows/alerts.yml` | The schedule that runs the alert job |
+| `CLAUDE.md` | Project notes for Claude Code |
 | `README.md` | This file |
 | `ROADMAP.md` | Feature log: everything planned and its status |
 
-To try the alert job on your own computer with Node.js 20: in `alerts/`, run `npm install`, then `node check.mjs --mode=test --dry-run --config=my-settings.json`.
+To change the app, edit the files in `src/` and run `npm run build` (needs Node.js 20 or newer). To try the alert job on your own computer: in `alerts/`, run `npm install`, then `node check.mjs --mode=test --dry-run --config=my-settings.json`.
 
 ## Known limits
 
