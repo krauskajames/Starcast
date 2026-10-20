@@ -7,14 +7,55 @@
 <style>
 /* Layout: full-bleed globe, instrument-panel overlays (layers left, time bar bottom, detail panel right / bottom sheet on phones). Deliberately dark-only: a night-use tool. */
 :root{
-  --bg:#05080f; --sea:#08101d; --land:#121c2c; --panel:rgba(10,16,28,.93); --panel-solid:#0b1220; --raise:#121c2e;
-  --line:#1c2840; --line-2:#2a3a58; --fg:#dbe2ee; --muted:#8593ab; --faint:#56637b;
+  /* dark (default) */
+  --bg:#05080f; --panel:rgba(10,16,28,.93); --panel-solid:#0b1220; --raise:#121c2e;
+  --line:#1c2840; --line-2:#2a3a58; --fg:#dbe2ee; --fg-2:#b8c2d4; --muted:#8593ab; --faint:#56637b;
   --accent:#f1b450; --accent-ink:#1a1204; --good:#56c9ad; --warn:#e7a23c; --bad:#df6157;
+  --fade:rgba(5,8,15,.96); --fade-0:rgba(5,8,15,0); --nodata:#11182a;
+  --alert-line:#3a3020; --alert-bg:rgba(241,180,80,.07); --danger-line:#5a2222; --danger-bg:rgba(223,97,87,.08); --danger-fg:#ff9d92;
+  --ex-bg:#1f5a50; --ex-fg:#c9fff0; --gd-bg:#24456e; --gd-fg:#d6e8ff; --fr-bg:#4a3a1c; --fr-fg:#ffe2a8; --pr-bg:#2a2e3a; --pr-fg:#8593ab;
+  --t-planet-bg:#3b3120; --t-planet-fg:#f4d49a; --t-meteor-bg:#1c3442; --t-meteor-fg:#9fd9f2; --t-moon-bg:#272c3a; --t-moon-fg:#c7cfe0;
+  --t-eclipse-bg:#3e2228; --t-eclipse-fg:#f2a7a7; --t-mars-bg:#3e2219; --t-mars-fg:#f5b39c; --t-green-bg:#173a2c; --t-green-fg:#9ff0c8;
+  --fc-bg:#13283a; --fc-fg:#bfe3ff; --fc-line:#1f3d58;
+  --map-sea:#08101d; --map-land:#142033; --map-grat:rgba(120,150,200,.10); --map-border:rgba(150,170,205,.35); --map-state:rgba(150,170,205,.28);
+  --map-coast:rgba(160,180,215,.28); --map-wi:rgba(241,180,80,.85); --map-rim:rgba(120,150,210,.35); --map-label:rgba(230,236,246,.82);
+  --map-sky:#9fd9f2; --map-saved:#f1b450; --map-saved-label:#f6d9a3; --map-sel:#ffffff; --map-drive:#56c9ad; --map-night:0.62;
   --f-display:"Chakra Petch", "Segoe UI", system-ui, sans-serif;
   --f-body:"Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
   --f-mono:"JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
   --r:8px; color-scheme:dark;
 }
+@media (prefers-color-scheme: light){ :root:not([data-theme="dark"]){
+  --bg:#e9edf3; --panel:rgba(255,255,255,.94); --panel-solid:#ffffff; --raise:#f3f5f9;
+  --line:#dde3ec; --line-2:#c3cddb; --fg:#162033; --fg-2:#34405a; --muted:#56637b; --faint:#7d889d;
+  --accent:#a8650f; --accent-ink:#ffffff; --good:#1b8a6f; --warn:#a96f12; --bad:#c03d33;
+  --fade:rgba(233,237,243,.96); --fade-0:rgba(233,237,243,0); --nodata:#e3e8ef;
+  --alert-line:#ead2aa; --alert-bg:rgba(168,101,15,.07); --danger-line:#efb5ae; --danger-bg:#fcebe9; --danger-fg:#a3332a;
+  --ex-bg:#d2f1e7; --ex-fg:#0d5a48; --gd-bg:#d9e7fb; --gd-fg:#1c4a8c; --fr-bg:#f7e8cc; --fr-fg:#76500e; --pr-bg:#eceff4; --pr-fg:#5a6478;
+  --t-planet-bg:#f6e6c4; --t-planet-fg:#6f4a0c; --t-meteor-bg:#d8eef8; --t-meteor-fg:#14506b; --t-moon-bg:#e6e9f0; --t-moon-fg:#3c465c;
+  --t-eclipse-bg:#f8dcdc; --t-eclipse-fg:#8a2a2a; --t-mars-bg:#f9ddd2; --t-mars-fg:#8a3416; --t-green-bg:#d6f2e4; --t-green-fg:#0f5b3b;
+  --fc-bg:#e2eefa; --fc-fg:#1c4a8c; --fc-line:#bcd5ee;
+  --map-sea:#c9d7e6; --map-land:#f5f3ee; --map-grat:rgba(40,70,110,.12); --map-border:rgba(40,60,95,.40); --map-state:rgba(40,60,95,.28);
+  --map-coast:rgba(40,60,95,.30); --map-wi:rgba(168,101,15,.95); --map-rim:rgba(40,70,120,.35); --map-label:rgba(22,32,51,.85);
+  --map-sky:#14608a; --map-saved:#a8650f; --map-saved-label:#6f4206; --map-sel:#162033; --map-drive:#127a5f; --map-night:0.45;
+  color-scheme:light;
+}}
+:root[data-theme="light"]{
+  --bg:#e9edf3; --panel:rgba(255,255,255,.94); --panel-solid:#ffffff; --raise:#f3f5f9;
+  --line:#dde3ec; --line-2:#c3cddb; --fg:#162033; --fg-2:#34405a; --muted:#56637b; --faint:#7d889d;
+  --accent:#a8650f; --accent-ink:#ffffff; --good:#1b8a6f; --warn:#a96f12; --bad:#c03d33;
+  --fade:rgba(233,237,243,.96); --fade-0:rgba(233,237,243,0); --nodata:#e3e8ef;
+  --alert-line:#ead2aa; --alert-bg:rgba(168,101,15,.07); --danger-line:#efb5ae; --danger-bg:#fcebe9; --danger-fg:#a3332a;
+  --ex-bg:#d2f1e7; --ex-fg:#0d5a48; --gd-bg:#d9e7fb; --gd-fg:#1c4a8c; --fr-bg:#f7e8cc; --fr-fg:#76500e; --pr-bg:#eceff4; --pr-fg:#5a6478;
+  --t-planet-bg:#f6e6c4; --t-planet-fg:#6f4a0c; --t-meteor-bg:#d8eef8; --t-meteor-fg:#14506b; --t-moon-bg:#e6e9f0; --t-moon-fg:#3c465c;
+  --t-eclipse-bg:#f8dcdc; --t-eclipse-fg:#8a2a2a; --t-mars-bg:#f9ddd2; --t-mars-fg:#8a3416; --t-green-bg:#d6f2e4; --t-green-fg:#0f5b3b;
+  --fc-bg:#e2eefa; --fc-fg:#1c4a8c; --fc-line:#bcd5ee;
+  --map-sea:#c9d7e6; --map-land:#f5f3ee; --map-grat:rgba(40,70,110,.12); --map-border:rgba(40,60,95,.40); --map-state:rgba(40,60,95,.28);
+  --map-coast:rgba(40,60,95,.30); --map-wi:rgba(168,101,15,.95); --map-rim:rgba(40,70,120,.35); --map-label:rgba(22,32,51,.85);
+  --map-sky:#14608a; --map-saved:#a8650f; --map-saved-label:#6f4206; --map-sel:#162033; --map-drive:#127a5f; --map-night:0.45;
+  color-scheme:light;
+}
+:root[data-theme="dark"]{ color-scheme:dark; }
 html,body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;overflow:hidden}
 *{box-sizing:border-box}
 button,input,select{font:inherit;color:inherit}
@@ -37,6 +78,7 @@ button{cursor:pointer}
 .status.demo .dot{background:var(--warn)} .status.loading .dot{background:var(--faint)}
 .status button{pointer-events:auto;background:none;border:0;color:var(--accent);padding:0;font-size:12px;text-decoration:underline;text-underline-offset:2px}
 .top .spacer{flex:1}
+.top .iconbtn + .iconbtn{margin-left:-4px}
 .iconbtn{white-space:nowrap;pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;font-family:var(--f-display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .iconbtn[aria-pressed="true"]{color:#ff8a7a;border-color:#5a2222}
 
@@ -58,7 +100,7 @@ button{cursor:pointer}
 
 /* time bar */
 .timebar{position:absolute;left:0;right:0;bottom:0;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
-  background:linear-gradient(to top,rgba(5,8,15,.96) 55%,rgba(5,8,15,0));display:flex;gap:12px;align-items:center}
+  background:linear-gradient(to top,var(--fade) 55%,var(--fade-0));display:flex;gap:12px;align-items:center}
 .play{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--line-2);background:var(--panel-solid);display:grid;place-items:center;color:var(--accent)}
 .tcol{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
 .tlabel{display:flex;justify-content:space-between;gap:8px;font-size:12px;color:var(--muted)}
@@ -88,6 +130,7 @@ h4{margin:0 0 8px;font-family:var(--f-display);font-size:11.5px;letter-spacing:.
 .btn.primary{background:var(--accent);color:var(--accent-ink);border-color:var(--accent);font-weight:700}
 .btn.ghost{background:none}
 .btn.danger{color:var(--bad)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
 input[type=text],input[type=number],select{background:var(--bg);border:1px solid var(--line-2);border-radius:6px;padding:6px 8px;min-width:0}
 input[type=number]{width:84px}
 label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
@@ -102,9 +145,11 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mu
 .stat .n{font-size:11px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
 /* alert preview */
-.alert{border:1px solid #3a3020;background:linear-gradient(180deg,rgba(241,180,80,.09),rgba(241,180,80,.02));border-radius:var(--r);padding:12px 13px;display:flex;flex-direction:column;gap:5px}
+.alert{border:1px solid var(--alert-line);background:var(--alert-bg);border-radius:var(--r);padding:12px 13px;display:flex;flex-direction:column;gap:5px}
 .alert .h{font-family:var(--f-display);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent)}
 .alert p{margin:0;line-height:1.45}
+.alert.danger{border-color:var(--danger-line);background:var(--danger-bg)} .alert.danger .h{color:var(--danger-fg)}
+.alert.green{border-color:var(--t-green-bg);background:var(--t-green-bg)} .alert.green .h{color:var(--t-green-fg)}
 
 /* forecast strip */
 .strip-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
@@ -124,12 +169,12 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mu
 .tg{display:grid;grid-template-columns:42px 1fr;gap:10px;padding:9px;border:1px solid var(--line);border-radius:6px;background:var(--raise)}
 .tg .sc{width:42px;height:42px;border-radius:6px;display:grid;place-items:center;font-family:var(--f-mono);font-weight:600;font-size:16px;line-height:1}
 .sc small{display:block;font-size:8px;font-family:var(--f-display);letter-spacing:.08em;text-transform:uppercase;margin-top:2px;font-weight:600}
-.s-ex{background:#1f5a50;color:#c9fff0}.s-gd{background:#24456e;color:#d6e8ff}.s-fr{background:#4a3a1c;color:#ffe2a8}.s-pr{background:#2a2e3a;color:var(--muted)}
+.s-ex{background:var(--ex-bg);color:var(--ex-fg)}.s-gd{background:var(--gd-bg);color:var(--gd-fg)}.s-fr{background:var(--fr-bg);color:var(--fr-fg)}.s-pr{background:var(--pr-bg);color:var(--pr-fg)}
 .tg .nm{display:flex;align-items:baseline;gap:6px;flex-wrap:wrap}
 .tg .nm b{font-size:14.5px}
 .tg .kd{font-size:11.5px;color:var(--muted)}
 .tg .win{font-size:12px;color:var(--fg);margin-top:2px}
-.tg .det{margin:5px 0 0;font-size:12.5px;line-height:1.45;color:#b8c2d4}
+.tg .det{margin:5px 0 0;font-size:12.5px;line-height:1.45;color:var(--fg-2)}
 .spark{display:flex;gap:1px;align-items:flex-end;height:16px;margin-top:5px}
 .spark i{flex:1;min-width:2px;background:var(--line-2);border-radius:1px}
 .more{background:none;border:0;color:var(--accent);padding:4px 0;font-size:13px;text-align:left}
@@ -148,8 +193,8 @@ label.f{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--mu
 .ev .t{font-weight:700;font-size:13.5px;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ev .nt{font-size:12.5px;color:var(--muted);line-height:1.45;margin-top:2px}
 .tag{font-family:var(--f-display);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:1px 6px;border-radius:3px;background:var(--line);color:var(--muted);font-weight:600}
-.tag.planet{background:#3b3120;color:#f4d49a}.tag.meteor{background:#1c3442;color:#9fd9f2}.tag.moon{background:#272c3a;color:#c7cfe0}.tag.eclipse{background:#3e2228;color:#f2a7a7}.tag.mars{background:#3e2219;color:#f5b39c}
-.fc{display:inline-block;margin-top:5px;font-size:12px;padding:3px 8px;border-radius:4px;background:#13283a;color:#bfe3ff;border:1px solid #1f3d58}
+.tag.planet,.tag.saved{background:var(--t-planet-bg);color:var(--t-planet-fg)}.tag.meteor{background:var(--t-meteor-bg);color:var(--t-meteor-fg)}.tag.moon{background:var(--t-moon-bg);color:var(--t-moon-fg)}.tag.eclipse{background:var(--t-eclipse-bg);color:var(--t-eclipse-fg)}.tag.mars{background:var(--t-mars-bg);color:var(--t-mars-fg)}.tag.green{background:var(--t-green-bg);color:var(--t-green-fg)}
+.fc{display:inline-block;margin-top:5px;font-size:12px;padding:3px 8px;border-radius:4px;background:var(--fc-bg);color:var(--fc-fg);border:1px solid var(--fc-line)}
 
 /* gear */
 .gstats{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -208,6 +253,7 @@ table.views th.r{text-align:right}
         <div class="status loading" id="status"><span class="dot"></span><span id="statusText">Loading forecast…</span></div>
       </div>
       <div class="spacer"></div>
+      <button class="iconbtn" id="themeBtn" title="Switch between automatic, light and dark">Theme: Auto</button>
       <button class="iconbtn" id="redBtn" aria-pressed="false" title="Red night-vision mode">Night red</button>
     </div>
     <div class="layers" id="layers"></div>
@@ -878,6 +924,100 @@ return new kd(this.curr.time,a,b)};$jscomp.global.Object.defineProperties(H.prot
     return out;
   }
 
+
+  /* ---------- light pollution: Walker's-law city glow model ---------- */
+  // [name, lat, lon, urban population]
+  const CITIES = [
+    ['Chicago', 41.878, -87.630, 9500000], ['Minneapolis-St Paul', 44.977, -93.265, 3700000], ['Milwaukee', 43.039, -87.906, 1570000],
+    ['Grand Rapids', 42.963, -85.668, 1000000], ['Madison', 43.073, -89.401, 450000], ['Rockford', 42.271, -89.094, 340000],
+    ['Green Bay', 44.519, -88.020, 330000], ['Duluth-Superior', 46.787, -92.100, 280000], ['Appleton', 44.262, -88.415, 250000],
+    ['Rochester MN', 44.012, -92.480, 220000], ['Kenosha', 42.585, -87.821, 170000], ['Eau Claire', 44.811, -91.498, 170000],
+    ['Muskegon', 43.234, -86.248, 170000], ['La Crosse', 43.801, -91.240, 140000], ['Racine', 42.726, -87.783, 135000],
+    ['Janesville', 42.683, -89.019, 100000], ['Dubuque', 42.501, -90.664, 100000], ['Wausau', 44.959, -89.630, 75000],
+    ['Oshkosh', 44.025, -88.543, 70000], ['Sheboygan', 43.751, -87.714, 50000], ['Beloit', 42.508, -89.032, 50000],
+    ['Stevens Point', 44.524, -89.574, 50000], ['Fond du Lac', 43.773, -88.447, 45000], ['Manitowoc', 44.089, -87.657, 35000],
+    ['West Bend', 43.425, -88.183, 32000], ['Marquette', 46.546, -87.395, 30000], ['Watertown', 43.195, -88.729, 25000],
+    ['Wisconsin Rapids', 44.384, -89.817, 25000], ['Marshfield', 44.669, -90.172, 25000], ['Baraboo-Dells', 43.470, -89.744, 25000],
+    ['Marinette-Menominee', 45.100, -87.630, 20000], ['Iron Mountain', 45.820, -88.066, 20000], ['Menomonie', 44.876, -91.919, 16000],
+    ['Beaver Dam', 43.458, -88.837, 16000], ['Escanaba', 45.745, -87.064, 15000], ['Platteville', 42.734, -90.478, 12000],
+    ['Monroe', 42.601, -89.638, 11000], ['Portage', 43.539, -89.462, 10000], ['Ironwood', 46.455, -90.171, 10000],
+    ['Rice Lake', 45.506, -91.738, 9000], ['Shawano', 44.782, -88.609, 9000], ['Sturgeon Bay', 44.834, -87.377, 9000],
+    ['Tomah', 43.980, -90.504, 9000], ['Ashland', 46.592, -90.884, 8000], ['Rhinelander', 45.637, -89.412, 8000],
+    ['Prairie du Chien', 43.051, -91.141, 6000], ['Minocqua', 45.871, -89.711, 5000], ['Hayward', 46.013, -91.485, 3000]
+  ];
+  const LP_BOX = { lat0: 40.5, lat1: 49.5, lon0: -96, lon1: -84 };
+  function kmBetween(la1, lo1, la2, lo2) {
+    const x = (lo2 - lo1) * D2R * Math.cos((la1 + la2) / 2 * D2R), y = (la2 - la1) * D2R;
+    return Math.sqrt(x * x + y * y) * 6371;
+  }
+  // Artificial sky brightness as a multiple of the natural sky (Walker 1977: ~0.01 * P * d^-2.5),
+  // with each city spread over a core radius so its centre does not blow up.
+  function skyGlow(lat, lon) {
+    let r = 0;
+    for (const c of CITIES) {
+      const d = kmBetween(lat, lon, c[1], c[2]);
+      if (d > 450) continue;
+      const core = 0.26 * Math.pow(c[3], 0.3);
+      const de = Math.sqrt(d * d + core * core);
+      r += 0.03 * c[3] * Math.pow(de, -2.5);
+    }
+    return r;
+  }
+  function inLPBox(lat, lon) { return lat >= LP_BOX.lat0 && lat <= LP_BOX.lat1 && lon >= LP_BOX.lon0 && lon <= LP_BOX.lon1; }
+  function sqmFromGlow(g) { return 21.95 - 2.5 * Math.log10(1 + g); }
+  function bortleFromSQM(q) { return q >= 21.85 ? 1 : q >= 21.7 ? 2 : q >= 21.4 ? 3 : q >= 20.5 ? 4 : q >= 19.5 ? 5 : q >= 18.9 ? 6 : q >= 18.4 ? 7 : q >= 17.8 ? 8 : 9; }
+  function lightPollution(lat, lon) {
+    if (!inLPBox(lat, lon)) return null;
+    const g = skyGlow(lat, lon), sqm = sqmFromGlow(g);
+    let near = null;
+    for (const c of CITIES) { const d = kmBetween(lat, lon, c[1], c[2]); const w = c[3] * Math.pow(Math.max(d, 5), -2.5); if (!near || w > near.w) near = { name: c[0], d, w }; }
+    return { glow: g, sqm, bortle: bortleFromSQM(sqm), brightest: near };
+  }
+
+  /* ---------- aurora ---------- */
+  const MAG_POLE = { lat: 80.8, lon: -72.8 }; // geomagnetic north pole, dipole approximation (IGRF, 2025)
+  function geomagLat(lat, lon) {
+    const s = Math.sin(lat * D2R) * Math.sin(MAG_POLE.lat * D2R) + Math.cos(lat * D2R) * Math.cos(MAG_POLE.lat * D2R) * Math.cos((lon - MAG_POLE.lon) * D2R);
+    return Math.asin(clamp(s, -1, 1)) * R2D;
+  }
+  // Rough Kp-to-oval rule: aurora overhead poleward of ~67 - 2.5*Kp geomagnetic latitude,
+  // and visible low on the northern horizon about 3 degrees beyond that.
+  function auroraChance(kp, mlat) {
+    const overhead = 67 - 2.5 * kp, horizon = overhead - 3;
+    if (mlat >= overhead) return { level: 3, text: 'possible overhead' };
+    if (mlat >= horizon + 1.5) return { level: 2, text: 'likely low in the north' };
+    if (mlat >= horizon) return { level: 1, text: 'possible low on the northern horizon' };
+    return { level: 0, text: 'unlikely' };
+  }
+  function kpNeeded(mlat) { return clamp((67 - 3 - mlat) / 2.5, 0, 9); }
+
+  /* ---------- plain-language night summary (alert text) ---------- */
+  // ev: evaluateTargets result; n: night {start,end}; wxAt(i); name; hourLabel(i) -> "9 pm"; when: "tonight"
+  function nightAlert(ev, n, wxAt, name, hourLabel, when) {
+    const ok = [];
+    for (let i = n.start; i < n.end; i++) { const w = wxAt(i); ok.push(ev.per[i].sunAlt < -10 && w && w.cloud < 35 ? 1 : 0); }
+    const win = bestWindow(ok, 1);
+    const rows = ev.res.map(r => { let pk = { s: 0, i: -1 }; for (let i = n.start; i < n.end; i++) if (r.scores[i].s > pk.s) pk = { s: r.scores[i].s, i }; return { r, pk }; })
+      .filter(x => x.pk.s >= 40).sort((a, b) => b.pk.s - a.pk.s);
+    if (!win) {
+      const anyWx = wxAt(n.start) != null;
+      return { good: false, quality: 'none', rows, text: anyWx ? `Clouds look likely all ${when === 'tonight' ? 'night' : when} at ${name}. Check back after the next model update.` : 'No weather forecast for this spot yet. The sky events below are still accurate.' };
+    }
+    const a = n.start + win.start, z = n.start + win.end;
+    const avg = k => { let s = 0, c = 0; for (let i = a; i < z; i++) { const w = wxAt(i); if (w && !isNaN(w[k])) { s += w[k]; c++; } } return c ? s / c : NaN; };
+    const cl = avg('cloud'), se = avg('seeing'), tr = avg('transp');
+    const quality = cl < 12 && se >= 3.5 ? 'great' : cl < 25 ? 'good' : 'fair';
+    let s = `Viewing conditions are ${quality} from ${hourLabel(a)} to ${hourLabel(z)} ${when} at ${name}`;
+    const inWin = rows.filter(x => x.pk.i >= a && x.pk.i < z);
+    const pick = (inWin.length ? inWin : rows);
+    const what = t => t.body === 'Saturn' ? 'the rings of Saturn' : t.body === 'Jupiter' ? "Jupiter's cloud belts and moons" : t.body === 'Moon' ? 'the Moon' : /(Galaxy|Nebula|Cluster|Pleiades|Milky Way)/.test(t.name) && !/^(M\d|NGC)/.test(t.name) ? 'the ' + t.name.replace(/^Milky Way.*/, 'Milky Way') : t.name;
+    if (pick[0]) { s += ` for viewing ${what(pick[0].r.t)}`; if (pick[1]) s += ` and ${what(pick[1].r.t)}`; }
+    s += '.';
+    if (!isNaN(cl)) s += ` Clouds ~${Math.round(cl)}%, seeing ${se.toFixed(1)}/5, transparency ${tr.toFixed(1)}/5.`;
+    for (let i = a; i < z; i++) { const w = wxAt(i); if (w && w.temp - w.td < 2) { s += ` Dew likely by ${hourLabel(i)}; bring a dew shield or heater.`; break; } }
+    return { good: true, quality, start: a, end: z, hours: z - a, rows: pick, cloud: cl, seeing: se, transp: tr, text: s };
+  }
+
   /* ---------- calendar ---------- */
   const SHOWERS = [
     ['Quadrantids', 1, 3, 110, 15.3, 49], ['Lyrids', 4, 22, 18, 18.1, 34], ['Eta Aquariids', 5, 6, 50, 22.5, -1],
@@ -958,7 +1098,7 @@ return new kd(this.curr.time,a,b)};$jscomp.global.Object.defineProperties(H.prot
     return ev;
   }
 
-  const api = { marsLs, marsSeason, saturnRings, ringText, solarDays, A, clamp, lerp, altFast, geoEq, gast, topo, topoFixed, sepDeg, moonInfo, moonPhaseName, planetState, gearStats, estSeeing, estTransparency, PLANETS, DSO, KIND_LABEL, gearReach, scoreHour, rating, evaluateTargets, bestWindow, nights, calendar, NELM_BY_BORTLE };
+  const api = { CITIES, skyGlow, lightPollution, inLPBox, kmBetween, geomagLat, auroraChance, kpNeeded, nightAlert, marsLs, marsSeason, saturnRings, ringText, solarDays, A, clamp, lerp, altFast, geoEq, gast, topo, topoFixed, sepDeg, moonInfo, moonPhaseName, planetState, gearStats, estSeeing, estTransparency, PLANETS, DSO, KIND_LABEL, gearReach, scoreHour, rating, evaluateTargets, bestWindow, nights, calendar, NELM_BY_BORTLE };
   if (typeof module !== 'undefined') module.exports = api; else root.Core = api;
 })(this);
 
@@ -1111,6 +1251,51 @@ function gridVal(key, t, lat, lon){
   return (v00*(1-dj)+v01*dj)*(1-di) + (v10*(1-dj)+v11*dj)*di;
 }
 
+/* ---------------- light pollution (city-glow model) ---------------- */
+const LPG = { lat0:42.0, lon0:-93.5, d:0.05, nLat:111, nLon:151, sqm:null };
+function buildLP(){
+  const a = new Float32Array(LPG.nLat*LPG.nLon);
+  for(let i=0;i<LPG.nLat;i++) for(let j=0;j<LPG.nLon;j++){ const g=C.skyGlow(LPG.lat0+i*LPG.d, LPG.lon0+j*LPG.d); a[i*LPG.nLon+j]=21.95-2.5*Math.log10(1+g); }
+  LPG.sqm = a;
+}
+function lpVal(lat, lon){
+  if(!LPG.sqm) return NaN;
+  const fi=(lat-LPG.lat0)/LPG.d, fj=(lon-LPG.lon0)/LPG.d;
+  if(fi<0||fj<0||fi>LPG.nLat-1||fj>LPG.nLon-1) return NaN;
+  const i=Math.min(Math.floor(fi),LPG.nLat-2), j=Math.min(Math.floor(fj),LPG.nLon-2), di=fi-i, dj=fj-j, a=LPG.sqm, n=LPG.nLon;
+  return (a[i*n+j]*(1-dj)+a[i*n+j+1]*dj)*(1-di) + (a[(i+1)*n+j]*(1-dj)+a[(i+1)*n+j+1]*dj)*di;
+}
+
+/* ---------------- aurora (NOAA SWPC) ---------------- */
+S.aur = { ov:null, ovTime:null, kp:[] };
+async function loadAurora(){
+  try{
+    const kpRaw = await getJSON('https://services.swpc.noaa.gov/products/noaa-planetary-k-index-forecast.json');
+    let rows = [];
+    if(Array.isArray(kpRaw) && Array.isArray(kpRaw[0])){ const h=kpRaw[0]; const ti=h.indexOf('time_tag'), ki=h.indexOf('kp'); rows = kpRaw.slice(1).map(r=>({t:Date.parse(r[ti].replace(' ','T')+'Z')/1000, kp:+r[ki]})); }
+    else if(Array.isArray(kpRaw)) rows = kpRaw.map(r=>({t:Date.parse(String(r.time_tag).replace(' ','T')+(String(r.time_tag).endsWith('Z')?'':'Z'))/1000, kp:+(r.kp ?? r.kp_index)}));
+    S.aur.kp = rows.filter(r=>isFinite(r.t)&&isFinite(r.kp)).sort((a,b)=>a.t-b.t);
+  }catch(e){ console.warn('Kp forecast unavailable', e); }
+  try{
+    const ov = await getJSON('https://services.swpc.noaa.gov/json/ovation_aurora_latest.json');
+    const a = new Float32Array(360*181);
+    (ov.coordinates||[]).forEach(([lo,la,v])=>{ const j=((Math.round(lo)%360)+360)%360, i=Math.round(la)+90; if(i>=0&&i<181) a[i*360+j]=v; });
+    S.aur.ov = a; S.aur.ovTime = Date.parse(ov['Forecast Time'])||Date.now();
+  }catch(e){ console.warn('Aurora nowcast unavailable', e); }
+  S.eval=null; render(); if(S.tab==='loc') renderPanel();
+}
+function kpAt(u){
+  const k=S.aur.kp; if(!k.length) return null;
+  let best=null; for(const r of k){ if(r.t<=u+60) best=r; else break; }
+  if(!best) return null;
+  return u - best.t <= 3*3600+60 ? best.kp : null;
+}
+function ovAt(lat, lon){
+  const a=S.aur.ov; if(!a) return 0;
+  const i=Math.round(lat)+90, j=((Math.round(lon)%360)+360)%360;
+  return i>=0&&i<181 ? a[i*360+j] : 0;
+}
+
 /* ---------------- point forecast ---------------- */
 let pointAbort=null;
 async function loadPoint(lat, lon){
@@ -1162,7 +1347,9 @@ const SC = {
   jet: ramp([[0,[28,40,84]],[70,[34,104,150]],[120,[96,170,140]],[160,[228,196,84]],[210,[230,116,52]],[280,[196,44,72]]]),
   dew: ramp([[0,[214,72,72]],[2,[226,148,68]],[4,[188,176,108]],[7,[64,128,150]],[12,[22,60,128]]]),
   obs: ramp([[0,[40,34,52]],[25,[70,62,96]],[50,[56,104,164]],[75,[48,156,176]],[100,[118,224,208]]]),
+  kp: (level, kp) => level>=3 ? [70,230,140] : level===2 ? [60,170,110] : level===1 ? [50,120,96] : kp>=3 ? [52,72,96] : [34,48,72],
   wind: ramp([[0,[16,48,132]],[10,[40,86,168]],[20,[104,138,196]],[30,[180,190,210]],[45,[236,236,242]]]),
+  lp: ramp([[17.6,[250,246,240]],[18.4,[236,96,72]],[18.9,[240,150,56]],[19.5,[236,212,72]],[20.5,[96,176,96]],[21.4,[44,104,176]],[21.7,[34,56,110]],[21.95,[16,18,34]]]),
   temp: ramp([[-20,[110,80,170]],[-5,[60,110,200]],[5,[60,160,180]],[15,[150,190,90]],[25,[230,170,60]],[35,[220,80,60]]])
 };
 const rgb = c => c ? `rgb(${c[0]|0},${c[1]|0},${c[2]|0})` : 'transparent';
@@ -1175,11 +1362,13 @@ const LAYERS = [
   {id:'transp', name:'Transparency', key:'transp', sc:SC.q5, ticks:['1 hazy','3','5 crisp'], dom:[1,5], note:'Estimated clarity from high cloud and moisture. Matters most for galaxies and nebulae.'},
   {id:'high', name:'High cloud', key:'hcloud', sc:SC.cloud, ticks:['None','50%','Full'], dom:[0,100], note:'Thin cirrus that hides faint objects even when the sky looks clear.'},
   {id:'jet', name:'Jet stream', key:'j250', sc:SC.jet, ticks:['Calm','150 km/h','280+'], dom:[0,280], note:'Wind at 250 hPa (about 34,000 ft). Fast jet streams blur planets.'},
-  {id:'dew', name:'Dew risk', key:'dew', sc:SC.dew, ticks:['Dew likely','4°C','Dry'], dom:[0,12], note:'Gap between temperature and dew point. Under 2°C your optics will fog without a dew heater.'}
+  {id:'dew', name:'Dew risk', key:'dew', sc:SC.dew, ticks:['Dew likely','4°C','Dry'], dom:[0,12], note:'Gap between temperature and dew point. Under 2°C your optics will fog without a dew heater.'},
+  {id:'lp', name:'Light pollution', key:'lp', sc:SC.lp, ticks:['City','Bortle 4','Dark'], dom:[17.6,21.95], note:'Estimated sky brightness from a city-glow model (Walker’s law). Same for every hour; does not include clouds or moonlight.'}
 ];
 const OVERLAYS = [
   {id:'night', name:'Night side', col:[6,10,28]},
   {id:'Sun', name:'Sunlit side', col:[255,206,120]},
+  {id:'aurora', name:'Aurora', col:[70,230,140]},
   {id:'Moon', name:'Moon up', col:[200,212,236]},
   {id:'Mercury', name:'Mercury', col:[196,186,172]},
   {id:'Venus', name:'Venus', col:[255,238,186]},
@@ -1189,6 +1378,7 @@ const OVERLAYS = [
 ];
 function layerVal(L, t, lat, lon, sunAlt){
   if(L.key==='dew'){ const T=gridVal('temp',t,lat,lon), D=gridVal('td',t,lat,lon); return T-D; }
+  if(L.key==='lp') return lpVal(lat,lon);
   if(L.key==='obs'){
     const c=gridVal('cloud',t,lat,lon); if(isNaN(c)) return NaN;
     const s=gridVal('seeing',t,lat,lon), tr=gridVal('transp',t,lat,lon);
@@ -1203,13 +1393,28 @@ function buildLayers(){
   $('#layers').innerHTML = `
     <div class="lgroup"><h3>Wisconsin weather</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
     <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p></div>
-    <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
+    <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
   $('#layers').querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{ S.layer=b.dataset.layer; store.set('layer',S.layer); buildLayers(); render(); });
   $('#layers').querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ S.ov[b.dataset.ov]=!S.ov[b.dataset.ov]; store.set('ov',S.ov); buildLayers(); render(); });
 }
 
 /* ---------------- globe ---------------- */
 const canvas = $('#globe'), ctx = canvas.getContext('2d');
+let PAL = {};
+function readPalette(){
+  const cs = getComputedStyle(document.documentElement), g = k => cs.getPropertyValue('--map-'+k).trim();
+  PAL = { sea:g('sea'), land:g('land'), grat:g('grat'), border:g('border'), state:g('state'), coast:g('coast'), wi:g('wi'), rim:g('rim'),
+    label:g('label'), sky:g('sky'), saved:g('saved'), savedLabel:g('saved-label'), sel:g('sel'), drive:g('drive'), night:parseFloat(g('night'))||0.6 };
+}
+readPalette();
+const THEMES = ['auto','light','dark'];
+function applyTheme(t){
+  if(t==='auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
+  $('#themeBtn').textContent = 'Theme: ' + t[0].toUpperCase()+t.slice(1);
+  readPalette(); render(); drawBand && drawBand();
+}
+$('#themeBtn').onclick = () => { const t = THEMES[(THEMES.indexOf(store.get('theme','auto'))+1)%3]; store.set('theme',t); applyTheme(t); };
+matchMedia('(prefers-color-scheme: light)').addEventListener('change', ()=>{ readPalette(); render(); });
 const land = topojson.feature(GEO.land, GEO.land.objects.land);
 const borders = topojson.mesh(GEO.countries, GEO.countries.objects.countries, (a,b)=>a!==b);
 const stateMesh = topojson.mesh(GEO.states, GEO.states.objects.states, (a,b)=>a!==b);
@@ -1256,7 +1461,7 @@ function interacting(){
 function skyNow(){
   const d = tDate(S.ti);
   const out = { g:C.gast(d), sun:C.geoEq('Sun',d), bodies:[] };
-  OVERLAYS.forEach(o=>{ if(o.id!=='night' && o.id!=='Sun' && S.ov[o.id]){ const e=C.geoEq(o.id,d); out.bodies.push({o, ra:e.ra, dec:e.dec}); } });
+  OVERLAYS.forEach(o=>{ if(o.id!=='night' && o.id!=='Sun' && o.id!=='aurora' && S.ov[o.id]){ const e=C.geoEq(o.id,d); out.bodies.push({o, ra:e.ra, dec:e.dec}); } });
   return out;
 }
 function bodyNeedsSun(id){ return id==='Moon' ? 90 : (id==='Venus'||id==='Mercury') ? -4 : id==='Jupiter' ? -5 : -7; }
@@ -1266,18 +1471,21 @@ function draw(){
   ctx.setTransform(DPR,0,0,DPR,0,0);
   ctx.clearRect(0,0,W,H);
   // sphere + land
-  ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle='#08101d'; ctx.fill();
-  ctx.beginPath(); path(land); ctx.fillStyle='#142033'; ctx.fill();
+  ctx.beginPath(); path({type:'Sphere'}); ctx.fillStyle=PAL.sea; ctx.fill();
+  ctx.beginPath(); path(land); ctx.fillStyle=PAL.land; ctx.fill();
   // global overlay raster: night + planet visibility
   const step = quality==='hi' ? 3 : 6;
   const ow = Math.ceil(W/step), oh = Math.ceil(H/step);
   ovCanvas.width=ow; ovCanvas.height=oh;
   const img = ovCtx.createImageData(ow,oh), px=img.data;
   const bodies = sky.bodies, nightOn = S.ov.night, sunOn = S.ov.Sun;
+  const auroraOn = S.ov.aurora, tu = S.times[S.ti];
+  const useOv = auroraOn && S.aur.ov && Math.abs(tu*1000 - S.aur.ovTime) < 3*3600e3;
+  const kpNow = auroraOn ? kpAt(tu) : null;
   const r = proj.scale(), [cx,cy]=proj.translate();
   const y0 = Math.max(0, Math.floor((cy-r)/step)), y1=Math.min(oh, Math.ceil((cy+r)/step));
   const x0 = Math.max(0, Math.floor((cx-r)/step)), x1=Math.min(ow, Math.ceil((cx+r)/step));
-  if(nightOn || sunOn || bodies.length){
+  if(nightOn || sunOn || bodies.length || (auroraOn && (useOv || kpNow!=null))){
     for(let y=y0;y<y1;y++) for(let x=x0;x<x1;x++){
       const ll = proj.invert([x*step+step/2, y*step+step/2]);
       if(!ll || isNaN(ll[0])) continue;
@@ -1287,11 +1495,17 @@ function draw(){
       let R=0,Gc=0,B=0,A=0;
       if(nightOn){
         const n = sunAlt>=0 ? 0 : sunAlt<=-18 ? 1 : (-sunAlt/18);
-        A = 0.62*n + (Math.random()-0.5)*0.008; R=4; Gc=7; B=20;
+        A = PAL.night*n + (Math.random()-0.5)*0.008; R=4; Gc=7; B=20;
       }
       if(sunOn && sunAlt > -0.8){
         const a = 0.15*clamp((sunAlt+0.8)/6,0,1);
         R=255; Gc=206; B=120; A=Math.max(A,a);
+      }
+      if(auroraOn && sunAlt < -6){
+        let pa = 0;
+        if(useOv) pa = clamp(ovAt(lat,lon)/40,0,1);
+        else if(kpNow!=null){ const ml=C.geomagLat(lat,lon), edge=67-2.5*kpNow; pa = ml>=edge ? clamp(1-(ml-edge-6)/6,0,1)*0.85 : clamp(1-(edge-ml)/3,0,1)*0.35; }
+        if(pa>0.02){ const a=0.55*pa, na=a+A*(1-a); R=(70*a+R*A*(1-a))/na; Gc=(230*a+Gc*A*(1-a))/na; B=(140*a+B*A*(1-a))/na; A=na; }
       }
       for(const b of bodies){
         const alt = C.altFast(lat,lon,b.ra,b.dec,sky.g);
@@ -1312,7 +1526,7 @@ function draw(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const bb = path.bounds(wisc);
   const wiVisible = isFinite(bb[0][0]) && bb[1][0]-bb[0][0] > 2 && d3.geoDistance([-89.8,44.6], proj.invert([cx,cy])||[0,0]) < 1.45;
-  if(S.grid && wiVisible){
+  if((S.grid || L.key==='lp') && wiVisible){
     const ws = Math.max(1, (quality==='hi'?2:4) * Math.max(1,(bb[1][0]-bb[0][0])/700));
     const bx0=Math.max(0,bb[0][0]-2), by0=Math.max(0,bb[0][1]-2), bx1=Math.min(W,bb[1][0]+2), by1=Math.min(H,bb[1][1]+2);
     const ww=Math.max(1,Math.ceil((bx1-bx0)/ws)), wh=Math.max(1,Math.ceil((by1-by0)/ws));
@@ -1330,38 +1544,42 @@ function draw(){
   }
   // lines
   ctx.lineJoin='round';
-  ctx.beginPath(); path(graticule); ctx.strokeStyle='rgba(120,150,200,.10)'; ctx.lineWidth=.6; ctx.stroke();
-  ctx.beginPath(); path(borders); ctx.strokeStyle='rgba(150,170,205,.35)'; ctx.lineWidth=.7; ctx.stroke();
-  if(r > baseScale*2.5){ ctx.beginPath(); path(stateMesh); ctx.strokeStyle='rgba(150,170,205,.28)'; ctx.lineWidth=.6; ctx.stroke(); }
-  ctx.beginPath(); path(land); ctx.strokeStyle='rgba(160,180,215,.28)'; ctx.lineWidth=.6; ctx.stroke();
-  ctx.beginPath(); path(wisc); ctx.strokeStyle='rgba(241,180,80,.85)'; ctx.lineWidth=1.3; ctx.stroke();
-  ctx.beginPath(); path({type:'Sphere'}); ctx.strokeStyle='rgba(120,150,210,.35)'; ctx.lineWidth=1; ctx.stroke();
+  ctx.beginPath(); path(graticule); ctx.strokeStyle=PAL.grat; ctx.lineWidth=.6; ctx.stroke();
+  ctx.beginPath(); path(borders); ctx.strokeStyle=PAL.border; ctx.lineWidth=.7; ctx.stroke();
+  if(r > baseScale*2.5){ ctx.beginPath(); path(stateMesh); ctx.strokeStyle=PAL.state; ctx.lineWidth=.6; ctx.stroke(); }
+  ctx.beginPath(); path(land); ctx.strokeStyle=PAL.coast; ctx.lineWidth=.6; ctx.stroke();
+  ctx.beginPath(); path(wisc); ctx.strokeStyle=PAL.wi; ctx.lineWidth=1.3; ctx.stroke();
+  ctx.beginPath(); path({type:'Sphere'}); ctx.strokeStyle=PAL.rim; ctx.lineWidth=1; ctx.stroke();
   // sub-body points (where the body is overhead)
   ctx.font='600 11px "Chakra Petch", system-ui, sans-serif'; ctx.textBaseline='middle';
   if(sunOn){
     const lon=((sky.sun.ra*15 - sky.g*15 + 540)%360)-180, p=visiblePt([lon,sky.sun.dec]);
-    if(p){ ctx.beginPath(); ctx.arc(p[0],p[1],6,0,7); ctx.fillStyle='#ffce78'; ctx.fill(); ctx.strokeStyle='rgba(255,206,120,.5)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p[0],p[1],11,0,7); ctx.stroke(); ctx.fillStyle='rgba(255,236,200,.95)'; ctx.fillText('Sun overhead',p[0]+15,p[1]); }
+    if(p){ ctx.beginPath(); ctx.arc(p[0],p[1],6,0,7); ctx.fillStyle='#ffce78'; ctx.fill(); ctx.strokeStyle='rgba(255,206,120,.5)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p[0],p[1],11,0,7); ctx.stroke(); ctx.fillStyle=PAL.label; ctx.fillText('Sun overhead',p[0]+15,p[1]); }
   }
   for(const b of sky.bodies){
     const lon = ((b.ra*15 - sky.g*15 + 540)%360)-180;
     const p = visiblePt([lon,b.dec]); if(!p) continue;
     ctx.beginPath(); ctx.arc(p[0],p[1],4,0,7); ctx.fillStyle=rgb(b.o.col); ctx.fill();
-    ctx.fillStyle='rgba(230,236,246,.9)'; ctx.fillText(b.o.id+' overhead', p[0]+7, p[1]);
+    ctx.fillStyle=PAL.label; ctx.fillText(b.o.id+' overhead', p[0]+7, p[1]);
   }
   // places
   if(bb[1][0]-bb[0][0] > 340){
     ctx.font='12px "Atkinson Hyperlegible", system-ui, sans-serif';
-    PLACES.forEach(([n,la,lo])=>{ if(S.saved.some(s=>Math.abs(s.lat-la)<0.12&&Math.abs(s.lon-lo)<0.18)) return; const p=visiblePt([lo,la]); if(!p) return; ctx.beginPath(); ctx.arc(p[0],p[1],2,0,7); ctx.fillStyle='rgba(230,236,246,.8)'; ctx.fill(); ctx.fillStyle='rgba(230,236,246,.75)'; ctx.fillText(n,p[0]+5,p[1]); });
-    SKYPLACES.forEach(([n,la,lo])=>{ const p=visiblePt([lo,la]); if(!p) return; star(p[0],p[1],5,'#9fd9f2'); ctx.fillStyle='#9fd9f2'; ctx.fillText(n,p[0]+8,p[1]); });
+    PLACES.forEach(([n,la,lo])=>{ if(S.saved.some(s=>Math.abs(s.lat-la)<0.12&&Math.abs(s.lon-lo)<0.18)) return; const p=visiblePt([lo,la]); if(!p) return; ctx.beginPath(); ctx.arc(p[0],p[1],2,0,7); ctx.fillStyle=PAL.label; ctx.fill(); ctx.fillText(n,p[0]+5,p[1]); });
+    SKYPLACES.forEach(([n,la,lo])=>{ const p=visiblePt([lo,la]); if(!p) return; star(p[0],p[1],5,PAL.sky); ctx.fillStyle=PAL.sky; ctx.fillText(n,p[0]+8,p[1]); });
   }
   // saved
   ctx.font='600 12px "Atkinson Hyperlegible", system-ui, sans-serif';
   S.saved.forEach(s=>{ const p=visiblePt([s.lon,s.lat]); if(!p) return;
-    ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(Math.PI/4); ctx.fillStyle='#f1b450'; ctx.fillRect(-4,-4,8,8); ctx.restore();
-    ctx.fillStyle='#f6d9a3'; ctx.fillText(s.name,p[0]+8,p[1]); });
+    ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(Math.PI/4); ctx.fillStyle=PAL.saved; ctx.fillRect(-4,-4,8,8); ctx.restore();
+    ctx.fillStyle=PAL.savedLabel; ctx.fillText(s.name,p[0]+8,p[1]); });
+  if(S.drive && S.drive.results){
+    ctx.font='600 12px "Atkinson Hyperlegible", system-ui, sans-serif';
+    S.drive.results.forEach((d,i)=>{ const p=visiblePt([d.lon,d.lat]); if(!p) return; star(p[0],p[1],6,PAL.drive); if(r > baseScale*5){ ctx.fillStyle=PAL.drive; ctx.fillText(d.name.length>32?d.name.slice(0,30)+'…':d.name,p[0]+9,p[1]); } });
+  }
   // selection
   const sp = visiblePt([S.sel.lon,S.sel.lat]);
-  if(sp){ ctx.beginPath(); ctx.arc(sp[0],sp[1],9,0,7); ctx.strokeStyle='#fff'; ctx.lineWidth=1.6; ctx.stroke();
+  if(sp){ ctx.beginPath(); ctx.arc(sp[0],sp[1],9,0,7); ctx.strokeStyle=PAL.sel; ctx.lineWidth=1.6; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(sp[0]-14,sp[1]); ctx.lineTo(sp[0]-5,sp[1]); ctx.moveTo(sp[0]+5,sp[1]); ctx.lineTo(sp[0]+14,sp[1]); ctx.moveTo(sp[0],sp[1]-14); ctx.lineTo(sp[0],sp[1]-5); ctx.moveTo(sp[0],sp[1]+5); ctx.lineTo(sp[0],sp[1]+14); ctx.stroke(); }
 }
 function star(x,y,r,col){ ctx.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, rr=i%2?r*.45:r; ctx.lineTo(x+Math.cos(a)*rr,y+Math.sin(a)*rr);} ctx.closePath(); ctx.fillStyle=col; ctx.fill(); }
@@ -1414,7 +1632,8 @@ function hoverTip(e){
   const L=LAYERS.find(l=>l.id===S.layer); const sky=skyNow();
   const v=layerVal(L,S.ti,ll[1],ll[0],C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g));
   if(isNaN(v)){ tip.hidden=true; return; }
-  const txt = L.id==='seeing'||L.id==='transp' ? v.toFixed(1)+' / 5' : L.id==='jet' ? windU(v) : L.id==='dew' ? (S.units==='F'?Math.round(v*1.8)+'°F':v.toFixed(1)+'°C')+' spread' : Math.round(v)+(L.id==='obs'?' / 100':'%');
+  const lpb = L.id==='lp' ? C.lightPollution(ll[1],ll[0]) : null;
+  const txt = L.id==='lp' ? `Bortle ${lpb?lpb.bortle:'?'} · ${v.toFixed(2)} mag/arcsec²` : L.id==='seeing'||L.id==='transp' ? v.toFixed(1)+' / 5' : L.id==='jet' ? windU(v) : L.id==='dew' ? (S.units==='F'?Math.round(v*1.8)+'°F':v.toFixed(1)+'°C')+' spread' : Math.round(v)+(L.id==='obs'?' / 100':'%');
   tip.textContent = `${L.name}: ${txt}`; tip.hidden=false;
   tip.style.left=Math.min(x+14, W-160)+'px'; tip.style.top=(y+14)+'px';
 }
@@ -1466,7 +1685,8 @@ $('#playBtn').onclick=()=>{
 };
 
 /* ---------------- location + panel ---------------- */
-function bortleFor(sel){ const s=S.saved.find(x=>near(x,sel)); return s ? s.bortle : S.defBortle; }
+function bortleFor(sel){ const s=S.saved.find(x=>near(x,sel)); if(s) return s.bortle; const lp=C.lightPollution(sel.lat,sel.lon); return lp ? lp.bortle : S.defBortle; }
+function bortleSource(sel){ if(S.saved.find(x=>near(x,sel))) return 'saved'; return C.lightPollution(sel.lat,sel.lon) ? 'estimated' : 'default'; }
 function near(a,b){ return Math.abs(a.lat-b.lat)<0.002 && Math.abs(a.lon-b.lon)<0.002; }
 function selectLocation(loc, o){
   o=o||{};
@@ -1511,35 +1731,25 @@ function scoreClass(s){ return s>=70?'s-ex':s>=50?'s-gd':s>=30?'s-fr':'s-pr'; }
 function rangeText(a,b){ return `${hourLabel(tDate(a))} – ${hourLabel(tDate(b))}`; }
 
 function nightSummary(ev, n){
-  // weather window: dark (sun < -12) and cloud < 35
-  const ok=[]; for(let i=n.start;i<n.end;i++){ const w=wxAt(i); const sun=ev.per[i].sunAlt; ok.push(sun<-10 && (!w || w.cloud<35) ? 1 : 0); }
-  const win = C.bestWindow(ok,1);
-  const rows = ev.res.map(r=>{ let pk={s:0,i:-1}; for(let i=n.start;i<n.end;i++) if(r.scores[i].s>pk.s) pk={s:r.scores[i].s,i}; return {r,pk}; }).filter(x=>x.pk.s>=40).sort((a,b)=>b.pk.s-a.pk.s);
-  const name = locName();
-  const when = nightLabel(n)==='Tonight' ? 'tonight' : nightLabel(n).replace(' night',' night');
-  if(!win){
-    const anyWx = wxAt(n.start)!=null;
-    return anyWx ? `Clouds look likely all ${when==='tonight'?'night':when} at ${name}. Check back after the next model update.` : `No weather forecast for this spot yet. The sky events below are still accurate.`;
-  }
-  const a=n.start+win.start, z=n.start+win.end;
-  const avg = k => { let s=0,c=0; for(let i=a;i<z;i++){ const w=wxAt(i); if(w&&!isNaN(w[k])){ s+=w[k]; c++; } } return c? s/c : NaN; };
-  const cl=avg('cloud'), se=avg('seeing'), tr=avg('transp');
-  const quality = cl<12 && se>=3.5 ? 'great' : cl<25 ? 'good' : 'fair';
-  let s = `Viewing conditions are ${quality} from ${rangeText(a,z)} ${when} at ${name}`;
-  const top = rows[0];
-  if(top){
-    const t=top.r.t;
-    const what = t.body==='Saturn' ? "the rings of Saturn" : t.body==='Jupiter' ? "Jupiter's cloud belts and moons" : t.body==='Moon' ? 'the Moon' : t.body==='Mars' ? 'Mars' : t.name;
-    s += ` for viewing ${what}`;
-    if(rows[1]) s += ` and ${rows[1].r.t.body ? rows[1].r.t.name : rows[1].r.t.name}`;
-  }
-  s += '.';
-  if(!isNaN(cl)) s += ` Clouds ~${Math.round(cl)}%, seeing ${se.toFixed(1)}/5, transparency ${tr.toFixed(1)}/5.`;
-  const dew = (()=>{ for(let i=a;i<z;i++){ const w=wxAt(i); if(w && w.temp-w.td<2) return hourLabel(tDate(i)); } return null; })();
-  if(dew) s += ` Dew likely by ${dew}; bring a dew shield or heater.`;
-  return s;
+  const when = nightLabel(n)==='Tonight' ? 'tonight' : nightLabel(n);
+  const r = C.nightAlert(ev, n, wxAt, locName(), i=>hourLabel(tDate(i)), when);
+  let txt = r.text;
+  const au = auroraNight(n);
+  if(au) txt += ' ' + au.text;
+  return txt;
 }
-
+function auroraNight(n){
+  if(!S.aur.kp.length) return null;
+  const ml = C.geomagLat(S.sel.lat, S.sel.lon);
+  let best=null;
+  for(let i=n.start;i<n.end;i++){
+    const kp=kpAt(S.times[i]); if(kp==null) continue;
+    const ch=C.auroraChance(kp, ml), w=wxAt(i);
+    if(ch.level>0 && (!w || w.cloud<60) && (!best || ch.level>best.ch.level || kp>best.kp)) best={i,kp,ch};
+  }
+  if(!best) return null;
+  return { ...best, text:`Aurora ${best.ch.text} around ${hourLabel(tDate(best.i))} (Kp ${best.kp.toFixed(1)} forecast).` };
+}
 function panelLoc(){
   const ev = evaluate();
   const saved = S.saved.find(x=>near(x,S.sel));
@@ -1548,7 +1758,7 @@ function panelLoc(){
   if(S.night>=nts.length) S.night=0;
   const n = nts[S.night];
   let h = `<div class="locline"><div><h2>${esc(locName())}</h2><div class="sub mono">${S.sel.lat.toFixed(3)}°, ${S.sel.lon.toFixed(3)}° ${S.point?'· point forecast':wxAt(0)?'· map forecast':''}</div></div>
-    <div class="row">${saved ? `<span class="tag" style="background:#3b3120;color:#f4d49a">Saved</span>` : `<button class="btn primary" id="saveBtn">Save</button>`}</div></div>`;
+    <div class="row">${saved ? `<span class="tag saved">Saved</span>` : `<button class="btn primary" id="saveBtn">Save</button>`}</div></div>`;
   if(S.savingName!==null){
     h += `<form class="row" id="saveForm"><input type="text" id="saveName" value="${esc(S.savingName)}" placeholder="Name, e.g. My Backyard" aria-label="Location name" style="flex:1"><button class="btn primary" type="submit">Save location</button><button class="btn ghost" type="button" id="saveCancel">Cancel</button></form>`;
   }
@@ -1559,9 +1769,9 @@ function panelLoc(){
   }
   h += `<div><h4>72-hour forecast</h4><div class="strip-wrap">${stripHTML(ev)}</div><p class="note">Tap a column to move the globe to that hour. Seeing and transparency are Starcast estimates from jet-stream wind, humidity, high cloud and aerosols.</p></div>`;
   // targets
-  h += `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Worth seeing</h4><span class="sub">Sky: Bortle ${bort} <button class="more" id="bortleEdit" style="padding:0;font-size:12px">change</button></span></div>`;
+  h += `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Worth seeing</h4><span class="sub">Sky: Bortle ${bort}${bortleSource(S.sel)==='estimated'?' (est.)':''} <button class="more" id="bortleEdit" style="padding:0;font-size:12px">change</button></span></div>`;
   if(S.bortleOpen){
-    h += `<div class="row" style="margin-bottom:8px"><select id="bortleSel" aria-label="Sky darkness (Bortle class)">${[1,2,3,4,5,6,7,8,9].map(v=>`<option value="${v}" ${v===bort?'selected':''}>Bortle ${v} · ${['','pristine','truly dark','rural','rural/suburban','suburban','bright suburban','suburban/urban','city','inner city'][v]}</option>`).join('')}</select><span class="sub">${saved?'Saved with this location.':'Default for unsaved spots.'}</span></div>`;
+    h += `<div class="row" style="margin-bottom:8px"><select id="bortleSel" aria-label="Sky darkness (Bortle class)">${[1,2,3,4,5,6,7,8,9].map(v=>`<option value="${v}" ${v===bort?'selected':''}>Bortle ${v} · ${['','pristine','truly dark','rural','rural/suburban','suburban','bright suburban','suburban/urban','city','inner city'][v]}</option>`).join('')}</select><span class="sub">${saved?'Saved with this location.':'Save this spot to keep your own setting. Estimate: '+(C.lightPollution(S.sel.lat,S.sel.lon)?'Bortle '+C.lightPollution(S.sel.lat,S.sel.lon).bortle+' from the city-glow model':'none outside the Upper Midwest')+'.'}</span></div>`;
   }
   if(nts.length){
     h += `<div class="nights" style="margin-bottom:8px">${nts.map((x,i)=>`<button data-night="${i}" aria-pressed="${i===S.night}">${esc(nightLabel(x))}</button>`).join('')}</div>`;
@@ -1579,6 +1789,7 @@ function panelLoc(){
     if(bad.length) h += `<details style="margin-top:6px"><summary class="sub" style="cursor:pointer">Not worth it ${esc(nightLabel(n).toLowerCase())} (${bad.length})</summary><ul class="tlist" style="margin-top:6px">${bad.map(x=>`<li class="why">${esc(x.r.t.name)}: ${esc(reason(x,n))}</li>`).join('')}</ul></details>`;
   } else h += `<div class="empty">No darkness in the next 72 hours at this latitude.</div>`;
   h += `</div>`;
+  h += driveHTML();
   if(S.interests.solar) h += solarHTML();
   return h;
 }
@@ -1586,7 +1797,7 @@ function solarHTML(){
   const gs = C.gearStats(gearForCalc(), bortleFor(S.sel));
   let h = `<div><h4>Solar observing</h4>`;
   if(!gs.solar){
-    return h + `<div class="alert" style="border-color:#5a2222;background:rgba(223,97,87,.08)"><div class="h" style="color:#ff9d92">Safety first</div><p>Never point your telescope, finder or camera at the Sun without a certified full-aperture solar filter. Even a second can permanently damage your eyes. Add a white-light solar filter in Gear to get daytime forecasts for sunspots.</p></div></div>`;
+    return h + `<div class="alert danger"><div class="h">Safety first</div><p>Never point your telescope, finder or camera at the Sun without a certified full-aperture solar filter. Even a second can permanently damage your eyes. Add a white-light solar filter in Gear to get daytime forecasts for sunspots.</p></div></div>`;
   }
   const days = C.solarDays(S.times, S.sel.lat, S.sel.lon, wxAt);
   h += `<ul class="tlist">${days.map(d=>{
@@ -1610,7 +1821,7 @@ function targetHTML(x,n){
   return `<li class="tg${r.reach.marginal?' dim':''}"><div class="sc ${scoreClass(s)}"><div>${s}<small>${C.rating(s)}</small></div></div>
     <div style="min-width:0"><div class="nm"><b>${esc(t.name)}</b><span class="kd">${esc(kind)} · ${how}${r.reach.marginal?' · faint for your scope':''}${r.reach.filter?' · use '+esc(r.reach.filter):''}</span></div>
     <div class="win">${win} · up to ${Math.round(x.maxAlt)}°</div>
-    <div class="spark" aria-hidden="true">${x.ser.map(v=>`<i style="height:${Math.max(2,v/100*16)}px;${v>=50?'background:#56c9ad':v>=30?'background:#c9a24b':''}"></i>`).join('')}</div>
+    <div class="spark" aria-hidden="true">${x.ser.map(v=>`<i style="height:${Math.max(2,v/100*16)}px;${v>=50?'background:var(--good)':v>=30?'background:var(--warn)':''}"></i>`).join('')}</div>
     <p class="det">${esc(r.detail)}</p></div></li>`;
 }
 
@@ -1622,6 +1833,7 @@ function stripHTML(ev){
     ['Darkness', i=>{ const p=ev.per[i]; return [darkColor(p), darkText(p)]; }],
     ['Dew risk', i=>{ const w=wxAt(i); return w? [SC.dew(w.temp-w.td), `Temp/dew point gap ${S.units==='F'?Math.round((w.temp-w.td)*1.8)+'°F':(w.temp-w.td).toFixed(1)+'°C'}`] : null; }],
     ['Wind', i=>{ const w=wxAt(i); return w? [SC.wind(w.w10), `Wind ${windU(w.w10)}`] : null; }],
+    ['Aurora (Kp)', i=>{ const kp=kpAt(S.times[i]); if(kp==null) return null; const ch=C.auroraChance(kp, C.geomagLat(S.sel.lat,S.sel.lon)); return [SC.kp(ch.level, kp), `Kp ${kp.toFixed(1)}: aurora ${ch.text}`]; }],
     ['Temperature', i=>{ const w=wxAt(i); return w? [SC.temp(w.temp), tempU(w.temp)] : null; }]
   ];
   let h = `<div class="strip"><div class="srow days"><div class="lab"></div>`;
@@ -1631,7 +1843,7 @@ function stripHTML(ev){
   h += `</div>`;
   rows.forEach(([lab,fn])=>{
     h+=`<div class="srow"><div class="lab">${lab}</div>`;
-    for(let i=0;i<72;i++){ const v=fn(i); h+= v ? `<div class="cell" data-i="${i}" style="background:${rgb(v[0])}" title="${esc(fmtFull.format(tDate(i))+' · '+v[1])}"></div>` : `<div class="cell" data-i="${i}" style="background:#11182a" title="No data"></div>`; }
+    for(let i=0;i<72;i++){ const v=fn(i); h+= v ? `<div class="cell" data-i="${i}" style="background:${rgb(v[0])}" title="${esc(fmtFull.format(tDate(i))+' · '+v[1])}"></div>` : `<div class="cell" data-i="${i}" style="background:var(--nodata)" title="No data"></div>`; }
     h+=`</div>`;
   });
   return h + `</div>`;
@@ -1663,17 +1875,122 @@ function updateNowCards(){
     + c('Moon', Math.round(mi.illum*100)+'%', moon.alt>0?`up ${Math.round(moon.alt)}°`:'set');
 }
 
+/* ---------------- where to go tonight ---------------- */
+S.drive = { radius: store.get('driveRadius', 60), busy:false, results:null, err:null, home:null, from:null };
+const NEAR_STATES = topojson.feature(GEO.states, GEO.states.objects.states).features.filter(f=>['55','27','17','19','26'].includes(String(f.id)));
+const onLand = (lat,lon) => NEAR_STATES.some(f=>d3.geoContains(f,[lon,lat]));
+function nightDarkHours(n, ev){ const h=[]; for(let i=n.start;i<n.end;i++) if(ev.per[i].sunAlt<-15) h.push(i); return h; }
+function siteStats(lat, lon, hrs){
+  const sqm = lpVal(lat,lon); const lp = C.lightPollution(lat,lon);
+  let sum=0, c=0; const ok=[];
+  hrs.forEach(i=>{ const v=gridVal('cloud',i,lat,lon); if(!isNaN(v)){ sum+=v; c++; } ok.push(!isNaN(v)&&v<30?1:0); });
+  const win = C.bestWindow(ok,1);
+  return { sqm: isNaN(sqm) ? (lp?lp.sqm:NaN) : sqm, bortle: lp?lp.bortle:null, cloud: c? sum/c : NaN, win: win ? {start:hrs[win.start], end:hrs[win.end-1]+1} : null };
+}
+async function findDrive(){
+  const ev = evaluate(), n = ev.nights[S.night];
+  const D = S.drive; D.err=null; D.results=null;
+  if(!n){ D.err='No darkness in the forecast window.'; renderPanel(); return; }
+  const hrs = nightDarkHours(n, ev);
+  if(!hrs.length){ D.err='The sky never gets fully dark that night.'; renderPanel(); return; }
+  if(!S.grid){ D.err='The forecast has not loaded yet.'; renderPanel(); return; }
+  D.busy=true; renderPanel();
+  const home = {lat:S.sel.lat, lon:S.sel.lon}, R = D.radius*1.609;
+  D.from = locName(); D.home = siteStats(home.lat, home.lon, hrs);
+  const cands=[], dLat=0.07;
+  for(let la=home.lat-R/111; la<=home.lat+R/111; la+=dLat){
+    const dLon = dLat/Math.cos(la*Math.PI/180);
+    for(let lo=home.lon-R/(111*Math.cos(la*Math.PI/180)); lo<=home.lon+R/(111*Math.cos(la*Math.PI/180)); lo+=dLon){
+      const km = C.kmBetween(home.lat,home.lon,la,lo); if(km>R || km<6) continue;
+      if(isNaN(gridVal('cloud',hrs[0],la,lo)) || !onLand(la,lo)) continue;
+      const st = siteStats(la,lo,hrs); if(isNaN(st.cloud)) continue;
+      const clear = Math.pow(clamp((100-st.cloud)/100,0,1),1.2), dark = clamp((st.sqm-18.5)/3.4,0,1);
+      cands.push({lat:la, lon:lo, km, st, score: 100*clear*(0.3+0.7*dark)*(1-0.15*km/R)});
+    }
+  }
+  cands.sort((a,b)=>b.score-a.score);
+  const picks=[]; for(const c of cands){ if(picks.every(p=>C.kmBetween(p.lat,p.lon,c.lat,c.lon)>25)) picks.push(c); if(picks.length>=5) break; }
+  if(!picks.length){ D.busy=false; D.err='No forecast-covered land within that range. Try a larger radius.'; renderPanel(); return; }
+  // public land near each pick, from OpenStreetMap
+  let parks=[];
+  try{
+    const q = '[out:json][timeout:25];(' + picks.map(c=>{ const a=`(around:14000,${c.lat.toFixed(4)},${c.lon.toFixed(4)})`;
+      return `nwr["leisure"="nature_reserve"]["name"]${a};nwr["leisure"="park"]["name"~"State|County|Natural|Forest|Recreation|Wildlife",i]${a};nwr["boundary"="protected_area"]["name"]${a};nwr["boundary"="national_park"]["name"]${a};`; }).join('') + ');out center tags 500;';
+    const j = await getJSON('https://overpass-api.de/api/interpreter?data='+encodeURIComponent(q));
+    parks = (j.elements||[]).map(e=>({ name:e.tags.name, tags:e.tags, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
+      .filter(x=>x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
+  }catch(e){ console.warn('Overpass failed', e); D.err='Could not reach OpenStreetMap to look up parks, so these are dark, clear areas. Check public access before you go.'; }
+  const kindOf = t => /State Park/i.test(t.name)?'State park':/National Forest/i.test(t.name)?'National forest':/State Forest/i.test(t.name)?'State forest':/County (Park|Forest)/i.test(t.name)?'County park':/Natural Area|Nature/i.test(t.name)||t.tags.leisure==='nature_reserve'?'Natural area':/Wildlife/i.test(t.name)?'Wildlife area':'Public land';
+  const rank = t => /State Park|National Forest|State Forest|County Park|Natural Area|Wildlife Area|Recreation Area/i.test(t.name) ? 2 : 1;
+  const used = new Set();
+  D.results = picks.map(c=>{
+    let best=null;
+    parks.forEach(pk=>{ if(used.has(pk.id)) return; const d=C.kmBetween(c.lat,c.lon,pk.lat,pk.lon); if(d>14) return;
+      const sc = rank(pk) * 10 - d*0.5; if(!best || sc>best.sc) best={pk, sc}; });
+    if(best){ used.add(best.pk.id); const pk=best.pk; const st=siteStats(pk.lat,pk.lon,hrs);
+      return { name:pk.name, kind:kindOf(pk), lat:pk.lat, lon:pk.lon, km:C.kmBetween(home.lat,home.lon,pk.lat,pk.lon), st, osm:`https://www.openstreetmap.org/${pk.id}` }; }
+    const lp=C.lightPollution(c.lat,c.lon);
+    return { name:`Dark, clear area ${lp&&lp.brightest?'away from '+lp.brightest.name:''}`.trim(), kind:'Check access', lat:c.lat, lon:c.lon, km:c.km, st:c.st, osm:`https://www.openstreetmap.org/?mlat=${c.lat.toFixed(4)}&mlon=${c.lon.toFixed(4)}#map=11/${c.lat.toFixed(4)}/${c.lon.toFixed(4)}` };
+  }).sort((a,b)=> (b.st.sqm - a.st.sqm)*8 + (a.st.cloud - b.st.cloud) );
+  D.busy=false; renderPanel(); render();
+}
+function driveHTML(){
+  const D=S.drive;
+  let h = `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Where to go</h4>
+    <span class="row"><select id="driveR" aria-label="Driving range">${[30,60,90,120].map(m=>`<option value="${m}" ${m===D.radius?'selected':''}>within ${m} mi</option>`).join('')}</select>
+    <button class="btn primary" id="driveGo" ${D.busy?'disabled':''}>${D.busy?'Searching…':'Find dark, clear spots'}</button></span></div>`;
+  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Searches public parks and forests within range for the darkest sky with the fewest clouds ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
+  if(D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.err)}</p>`;
+  if(D.results){
+    const hm = D.home;
+    h += `<p class="sub" style="margin:0 0 6px">From ${esc(D.from)}: Bortle ${hm.bortle??'?'}, ${isNaN(hm.cloud)?'no forecast':Math.round(hm.cloud)+'% cloud'} during full darkness.</p><ul class="tlist">`;
+    h += D.results.map((r,i)=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(r.name)}</b>
+      <span class="sub">${esc(r.kind)} · ~${Math.round(r.km*0.621)} mi straight line · Bortle ${r.st.bortle??'?'} · ${Math.round(r.st.cloud)}% cloud${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
+      <span class="row" style="margin-top:5px;gap:12px"><button class="more" data-dgo="${i}" style="padding:0">Show forecast</button>
+      <a class="more" style="padding:0" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat.toFixed(5)},${r.lon.toFixed(5)}" target="_blank" rel="noopener">Directions</a>
+      <a class="more" style="padding:0" href="${r.osm}" target="_blank" rel="noopener">Map</a></span></div></li>`).join('');
+    h += `</ul><p class="note">Many parks close at night (Wisconsin state parks usually at 11 pm unless you have a campsite), so check hours and permits before you go. Park data © OpenStreetMap contributors.</p>`;
+  }
+  return h + `</div>`;
+}
+
 /* saved */
 function panelSaved(){
   let h = `<h2>Saved locations</h2>`;
-  if(!S.saved.length) h += `<div class="empty">No saved spots yet. Click anywhere on the globe, then press <b>Save</b> in the Forecast tab. Saved spots get their own sky-darkness setting and will drive alerts later.</div>`;
+  if(!S.saved.length) h += `<div class="empty">No saved spots yet. Click anywhere on the globe, then press <b>Save</b> in the Forecast tab. Saved spots get their own sky-darkness setting and can send you alerts.</div>`;
   else h += `<ul class="slist">${S.saved.map((s,i)=>`<li class="sv"><div class="info"><b>${esc(s.name)}</b><span class="sub mono">${s.lat.toFixed(3)}°, ${s.lon.toFixed(3)}° · Bortle ${s.bortle}</span></div>
      ${S.confirmDel===i ? `<button class="btn danger" data-del="${i}">Delete</button><button class="btn ghost" data-cancel>Keep</button>` : `<button class="btn" data-go="${i}">View</button><button class="btn ghost" data-ask="${i}" aria-label="Delete ${esc(s.name)}">✕</button>`}</li>`).join('')}</ul>`;
-  h += `<div><h4>Defaults</h4><div class="form"><label class="f">Sky darkness for unsaved spots<select id="defBortle">${[1,2,3,4,5,6,7,8,9].map(v=>`<option ${v===S.defBortle?'selected':''}>${v}</option>`).join('')}</select></label>
+  h += `<div><h4>Defaults</h4><div class="form"><label class="f">Sky darkness outside the Upper Midwest<select id="defBortle">${[1,2,3,4,5,6,7,8,9].map(v=>`<option ${v===S.defBortle?'selected':''}>${v}</option>`).join('')}</select></label>
     <label class="f">Units<select id="units"><option value="F" ${S.units==='F'?'selected':''}>°F, mph</option><option value="C" ${S.units==='C'?'selected':''}>°C, km/h</option></select></label></div>
     <p class="note">Bortle class rates sky brightness from 1 (pristine) to 9 (inner city). It sets how faint you can see, which decides what is worth pointing at.</p></div>`;
+  h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Coming next: email or phone alerts for saved spots, and “best clear, dark public land within driving range.” Both need a small server, which is the next build step.</p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors. Sky positions by Astronomy Engine. Maps from Natural Earth.</p>`;
+
+  return h;
+}
+
+/* alert settings: exported for the scheduled GitHub job */
+S.alertRules = Object.assign({quality:'good', minHours:2, aurora:true, appUrl:''}, store.get('alertRules',{}));
+function alertConfig(){
+  return { version:1, timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'America/Chicago', units:S.units,
+    appUrl:S.alertRules.appUrl || '', rules:{quality:S.alertRules.quality, minHours:S.alertRules.minHours, aurora:S.alertRules.aurora},
+    gear:gearForCalc(), interests:S.interests,
+    locations:S.saved.filter(x=>x.alerts!==false).map(x=>({name:x.name, lat:+x.lat.toFixed(4), lon:+x.lon.toFixed(4), bortle:x.bortle})) };
+}
+function alertsHTML(){
+  const R=S.alertRules, on=S.saved.filter(x=>x.alerts!==false);
+  let h = `<div><h4>Alerts</h4><p class="note" style="margin:0 0 8px">A free scheduled job on GitHub checks the forecast every afternoon and sends a phone notification or email when your rules are met. The README walks through the one-time setup.</p>`;
+  if(S.saved.length) h += `<div class="checks" style="margin-bottom:8px">${S.saved.map((x,i)=>`<label><input type="checkbox" data-alon="${i}" ${x.alerts!==false?'checked':''}> ${esc(x.name)}</label>`).join('')}</div>`;
+  else h += `<p class="note" style="margin:0 0 8px">Save a location first; alerts are sent for saved spots.</p>`;
+  h += `<div class="form">
+    <label class="f">Alert when conditions are<select id="al_q"><option value="good" ${R.quality==='good'?'selected':''}>Good or better</option><option value="great" ${R.quality==='great'?'selected':''}>Great only</option></select></label>
+    <label class="f">For at least<select id="al_h">${[1,2,3,4].map(v=>`<option value="${v}" ${v===R.minHours?'selected':''}>${v} hour${v>1?'s':''}</option>`).join('')}</select></label>
+    <label class="checks wide" style="display:flex;gap:7px"><input type="checkbox" id="al_a" ${R.aurora?'checked':''}> Also alert when aurora may be visible and skies are clear enough</label>
+    <label class="f wide">Your Starcast web address (opens when you tap a notification)<input type="text" id="al_u" value="${esc(R.appUrl)}" placeholder="https://your-name.github.io/starcast/"></label>
+  </div>
+  <div class="row" style="margin-top:8px"><button class="btn primary" id="alCopy" ${on.length?'':'disabled'}>Copy alert settings</button><span class="note">Paste into the ALERTS_CONFIG secret on GitHub.</span></div>
+  <textarea id="alText" hidden readonly style="width:100%;height:110px;margin-top:6px;background:var(--bg);color:var(--fg);border:1px solid var(--line-2);border-radius:6px;font-family:var(--f-mono);font-size:11px"></textarea></div>`;
   return h;
 }
 
@@ -1798,14 +2115,19 @@ function wirePanel(){
   b.querySelectorAll('[data-night]').forEach(x=>x.onclick=()=>{ S.night=+x.dataset.night; S.showAll=false; renderPanel(); const n=evaluate().nights[S.night]; if(n) setTime(n.start+Math.min(3,n.end-n.start-1)); });
   const sa=$('#showAll'); if(sa) sa.onclick=()=>{ S.showAll=!S.showAll; renderPanel(); };
   const save=$('#saveBtn'); if(save) save.onclick=()=>{ S.savingName = S.sel.name && !S.sel.name.includes('example') ? S.sel.name : ''; renderPanel(); const i=$('#saveName'); if(i) i.focus(); };
-  const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:S.defBortle}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
+  const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:bortleFor(S.sel), alerts:true}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
     $('#saveCancel').onclick=()=>{ S.savingName=null; renderPanel(); }; }
   const be=$('#bortleEdit'); if(be) be.onclick=()=>{ S.bortleOpen=!S.bortleOpen; renderPanel(); };
-  const bs=$('#bortleSel'); if(bs) bs.onchange=()=>{ const v=+bs.value; const s=S.saved.find(x=>near(x,S.sel)); if(s){ s.bortle=v; store.set('saved',S.saved);} else { S.defBortle=v; store.set('defBortle',v);} S.eval=null; renderPanel(); };
+  const bs=$('#bortleSel'); if(bs) bs.onchange=()=>{ const v=+bs.value; const s=S.saved.find(x=>near(x,S.sel)); if(s){ s.bortle=v; store.set('saved',S.saved); S.eval=null; renderPanel(); } else { toast('Save this spot first to set its sky darkness'); } };
   b.querySelectorAll('[data-go]').forEach(x=>x.onclick=()=>{ const s=S.saved[+x.dataset.go]; selectLocation({lat:s.lat,lon:s.lon,name:s.name},{fly:true,tab:'loc'}); });
   b.querySelectorAll('[data-ask]').forEach(x=>x.onclick=()=>{ S.confirmDel=+x.dataset.ask; renderPanel(); });
   b.querySelectorAll('[data-cancel]').forEach(x=>x.onclick=()=>{ S.confirmDel=null; renderPanel(); });
   b.querySelectorAll('[data-del]').forEach(x=>x.onclick=()=>{ const s=S.saved.splice(+x.dataset.del,1)[0]; S.confirmDel=null; store.set('saved',S.saved); toast(`Deleted “${s.name}”`); renderPanel(); render(); });
+  b.querySelectorAll('[data-alon]').forEach(x=>x.onchange=()=>{ S.saved[+x.dataset.alon].alerts=x.checked; store.set('saved',S.saved); });
+  const saveRules=()=>{ S.alertRules={quality:$('#al_q').value, minHours:+$('#al_h').value, aurora:$('#al_a').checked, appUrl:$('#al_u').value.trim()}; store.set('alertRules',S.alertRules); };
+  ['#al_q','#al_h','#al_a','#al_u'].forEach(id=>{ const el=$(id); if(el) el.onchange=saveRules; });
+  const ac=$('#alCopy'); if(ac) ac.onclick=()=>{ saveRules(); const txt=JSON.stringify(alertConfig(),null,1), ta=$('#alText'); ta.value=txt;
+    navigator.clipboard.writeText(txt).then(()=>toast('Alert settings copied')).catch(()=>{ ta.hidden=false; ta.select(); toast('Select and copy the text below'); }); };
   const co=$('#ckOpen'); if(co) co.onclick=()=>{ S.checkOpen=true; renderPanel(); };
   const cc=$('#ckCancel'); if(cc) cc.onclick=()=>{ S.checkOpen=false; renderPanel(); };
   const cf=$('#ckForm'); if(cf) cf.onsubmit=e=>{ e.preventDefault();
@@ -1818,6 +2140,9 @@ function wirePanel(){
   b.querySelectorAll('[data-ckdel]').forEach(x=>x.onclick=()=>{ S.checks=S.checks.filter(c=>c.id!==+x.dataset.ckdel); store.set('checks',S.checks); renderPanel(); });
   const cp=$('#ckCopy'); if(cp) cp.onclick=()=>{ const txt=checksTSV(), ta=$('#ckText'); ta.value=txt;
     navigator.clipboard.writeText(txt).then(()=>toast('Copied')).catch(()=>{ ta.hidden=false; ta.select(); toast('Select and copy the text below'); }); };
+  const dr=$('#driveR'); if(dr) dr.onchange=()=>{ S.drive.radius=+dr.value; store.set('driveRadius',S.drive.radius); };
+  const dg=$('#driveGo'); if(dg) dg.onclick=()=>findDrive();
+  b.querySelectorAll('[data-dgo]').forEach(x=>x.onclick=()=>{ const r=S.drive.results[+x.dataset.dgo]; selectLocation({lat:r.lat,lon:r.lon,name:r.name},{fly:true,tab:'loc'}); });
   const db=$('#defBortle'); if(db) db.onchange=()=>{ S.defBortle=+db.value; store.set('defBortle',S.defBortle); S.eval=null; };
   const un=$('#units'); if(un) un.onchange=()=>{ S.units=un.value; store.set('units',S.units); };
   b.querySelectorAll('[data-cf]').forEach(x=>x.onclick=()=>{ S.calFilter=x.dataset.cf; renderPanel(); });
@@ -1854,10 +2179,13 @@ $('#redBtn').onclick=()=>{ S.red=!S.red; $('#red').hidden=!S.red; $('#redBtn').s
 
 /* boot */
 window.addEventListener('resize', ()=>{ clearTimeout(resize.t); resize.t=setTimeout(resize,80); });
+applyTheme(store.get('theme','auto'));
 buildLayers(); resize();
 setTime(nowIndex());
+buildLP();
 renderPanel();
 loadGrid(false);
+loadAurora();
 setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; loadGrid(false); } }, 5*60e3);
 })();
 </script>
