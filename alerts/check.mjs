@@ -1,9 +1,10 @@
 // Starcast alerts: checks tonight's forecast for each saved location and sends a
 // phone notification (ntfy) and/or email when your rules are met.
 //
-// Usage:  node check.mjs --mode=daily|evening|test [--dry-run] [--config=path.json]
+// Usage:  node check.mjs --mode=daily|evening|weekly|test [--dry-run] [--config=path.json]
 //   daily   : afternoon check; sends a viewing alert if tonight qualifies (plus aurora)
 //   evening : sends only aurora alerts for the next few hours
+//   weekly  : the week ahead: which nights look best at each spot (sent every time)
 //   test    : always sends tonight's summary, to confirm notifications work
 //
 // Settings come from the ALERTS_CONFIG environment variable (copied from Starcast's
@@ -42,9 +43,10 @@ async function getJSON(url) {
 }
 
 async function forecast(lat, lon, hours) {
-  const w = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${VARS.join(',')}&forecast_days=4&timeformat=unixtime&timezone=GMT`);
+  const days = hours.length > 72 ? 8 : 4;
+  const w = await getJSON(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&hourly=${VARS.join(',')}&forecast_days=${days}&timeformat=unixtime&timezone=GMT`);
   let aq = null;
-  try { aq = await getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=aerosol_optical_depth&forecast_days=4&timeformat=unixtime&timezone=GMT`); } catch (e) { /* haze is optional */ }
+  try { aq = await getJSON(`https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${lat}&longitude=${lon}&hourly=aerosol_optical_depth&forecast_days=${Math.min(days, 5)}&timeformat=unixtime&timezone=GMT`); } catch (e) { /* haze is optional */ }
   const off = w.hourly.time.indexOf(hours[0]);
   if (off < 0) throw new Error('Forecast does not line up with the current hour');
   const P = {};
@@ -73,7 +75,7 @@ async function main() {
   const hFmt = new Intl.DateTimeFormat('en-US', { hour: 'numeric', timeZone: tz });
   const dFmt = new Intl.DateTimeFormat('en-US', { weekday: 'long', month: 'short', day: 'numeric', timeZone: tz });
   const now = Math.floor(Date.now() / 3600000) * 3600;
-  const hours = Array.from({ length: 72 }, (_, i) => now + i * 3600);
+  const hours = Array.from({ length: MODE === 'weekly' ? 168 : 72 }, (_, i) => now + i * 3600);
   const hourLabel = i => hFmt.format(new Date(hours[i] * 1000)).replace(/\s?([AP])M/, (m, a) => a === 'A' ? ' am' : ' pm');
   const kp = cfg.rules.aurora ? await kpForecast() : [];
   const messages = [];
@@ -81,7 +83,23 @@ async function main() {
   for (const loc of cfg.locations) {
     try {
       const wxAt = await forecast(loc.lat, loc.lon, hours);
-      const ev = C.evaluateTargets({ lat: loc.lat, lon: loc.lon, hours, wxAt, gear: cfg.gear, bortle: loc.bortle || 5, interests: cfg.interests });
+      const ev = C.evaluateTargets({ lat: loc.lat, lon: loc.lon, hours, wxAt, gear: cfg.gear, bortle: loc.bortle || 5, interests: cfg.interests, horizon: loc.horizon });
+      if (MODE === 'weekly') {
+        const lines = [];
+        for (const nn of C.nights(hours, loc.lat, loc.lon)) {
+          if (nn.end - nn.start < 3) continue;
+          const day = new Intl.DateTimeFormat('en-US', { weekday: 'long', timeZone: tz }).format(new Date(hours[nn.start] * 1000));
+          const a = C.nightAlert(ev, nn, wxAt, loc.name, hourLabel, day);
+          if (a.good && a.quality !== 'fair') {
+            const what = a.rows.slice(0, 2).map(x => x.r.t.name.replace(/ \(M\d+\)$/, '')).join(' and ');
+            lines.push(`${day}: ${a.quality}, ${hourLabel(a.start)} to ${hourLabel(a.end)}, clouds ~${Math.round(a.cloud)}%${what ? ` (${what})` : ''}`);
+          }
+        }
+        messages.push({ title: `Week ahead at ${loc.name}`, tags: 'calendar',
+          body: lines.length ? `Best nights for observing:\n${lines.join('\n')}\nForecasts beyond 3 days change often; Starcast will alert you on the day.` : 'No clear nights stand out this week. Starcast will still alert you if a night clears up.' });
+        console.log(`${loc.name}: ${lines.length} good night(s) this week`);
+        continue;
+      }
       const n = C.nights(hours, loc.lat, loc.lon).find(x => x.start < 20); // tonight
       if (!n) { console.log(`${loc.name}: no darkness tonight`); continue; }
       const al = C.nightAlert(ev, n, wxAt, loc.name, hourLabel, 'tonight');

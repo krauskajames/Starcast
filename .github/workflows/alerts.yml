@@ -4,14 +4,15 @@ on:
   schedule:
     - cron: '35 20 * * *'   # daily viewing check: 3:35 pm CDT / 2:35 pm CST
     - cron: '35 1 * * *'    # evening aurora check: 8:35 pm CDT / 7:35 pm CST
+    - cron: '35 13 * * 1'   # weekly outlook: Mondays 8:35 am CDT / 7:35 am CST
   workflow_dispatch:
     inputs:
       mode:
-        description: 'daily, evening (aurora only), or test (always sends)'
+        description: 'daily, evening (aurora only), weekly (week ahead), or test (always sends)'
         required: true
         default: test
         type: choice
-        options: [test, daily, evening]
+        options: [test, daily, evening, weekly]
 
 jobs:
   alerts:
@@ -26,7 +27,7 @@ jobs:
           node-version: 20
       - run: npm install --no-audit --no-fund
       - name: Check forecast and send alerts
-        run: node check.mjs --mode=${{ github.event.inputs.mode || (github.event.schedule == '35 1 * * *' && 'evening' || 'daily') }}
+        run: node check.mjs --mode=${{ github.event.inputs.mode || (github.event.schedule == '35 1 * * *' && 'evening' || github.event.schedule == '35 13 * * 1' && 'weekly' || 'daily') }}
         env:
           ALERTS_CONFIG: ${{ secrets.ALERTS_CONFIG }}
           NTFY_TOPIC: ${{ secrets.NTFY_TOPIC }}
