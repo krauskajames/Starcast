@@ -71,7 +71,12 @@ async function loadAurora(){
     (ov.coordinates||[]).forEach(([lo,la,v])=>{ const j=((Math.round(lo)%360)+360)%360, i=Math.round(la)+90; if(i>=0&&i<181) a[i*360+j]=v; });
     S.aur.ov = a; S.aur.ovTime = Date.parse(ov['Forecast Time'])||Date.now();
   }catch(e){ console.warn('Aurora nowcast unavailable', e); }
-  S.eval=null; render(); if(S.tab==='loc') renderPanel();
+  S.eval=null; buildLayers(); render(); if(S.tab==='loc') renderPanel();
+}
+function auroraSource(){
+  const tu=S.times[S.ti];
+  if(S.aur.ov && Math.abs(tu*1000-S.aur.ovTime) < 3*3600e3) return `NOAA’s aurora map for ${fmtTime.format(new Date(S.aur.ovTime))}.`;
+  const kp=kpAt(tu); return kp!=null ? `Estimated from NOAA’s Kp ${kp.toFixed(1)} forecast for this hour.` : 'No NOAA aurora forecast for this hour.';
 }
 function kpAt(u){
   const k=S.aur.kp; if(!k.length) return null;
@@ -79,10 +84,24 @@ function kpAt(u){
   if(!best) return null;
   return u - best.t <= 3*3600+60 ? best.kp : null;
 }
+// NOAA OVATION aurora probability (%) on a 1-degree grid, smoothly interpolated
 function ovAt(lat, lon){
   const a=S.aur.ov; if(!a) return 0;
-  const i=Math.round(lat)+90, j=((Math.round(lon)%360)+360)%360;
-  return i>=0&&i<181 ? a[i*360+j] : 0;
+  const fi=clamp(lat+90,0,180), fj=((lon%360)+360)%360;
+  const i=Math.min(Math.floor(fi),179), j=Math.floor(fj)%360, j2=(j+1)%360, di=fi-i, dj=fj-Math.floor(fj);
+  return (a[i*360+j]*(1-dj)+a[i*360+j2]*dj)*(1-di) + (a[(i+1)*360+j]*(1-dj)+a[(i+1)*360+j2]*dj)*di;
+}
+// Beyond NOAA's next-hour map: a probability band around the oval implied by the Kp forecast
+function kpProb(kp, lat, lon){
+  const ml=C.geomagLat(lat,lon), edge=67-2.5*kp, mid=edge+4, w=3.2+0.25*kp;
+  return Math.min(90, (12+9*kp)) * Math.exp(-Math.pow((ml-mid)/w,2));
+}
+// NOAA's colors: green at 10%, yellow at 50%, red at 90%
+const AUR_RAMP = [[5,[0,170,60]],[10,[0,220,70]],[30,[90,235,40]],[50,[245,235,40]],[70,[250,150,30]],[90,[235,40,30]]];
+function auroraRGB(p){
+  if(p<=AUR_RAMP[0][0]) return AUR_RAMP[0][1];
+  for(let k=1;k<AUR_RAMP.length;k++){ if(p<=AUR_RAMP[k][0]){ const [a,ca]=AUR_RAMP[k-1],[b,cb]=AUR_RAMP[k], t=(p-a)/(b-a); return [ca[0]+(cb[0]-ca[0])*t, ca[1]+(cb[1]-ca[1])*t, ca[2]+(cb[2]-ca[2])*t]; } }
+  return AUR_RAMP[AUR_RAMP.length-1][1];
 }
 
 /* ---------------- point forecast ---------------- */
@@ -188,6 +207,7 @@ function buildLayers(){
     <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
     <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p></div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
+  if(S.ov.aurora) $('#layers').insertAdjacentHTML('beforeend', `<div class="lgroup legend"><h3>Aurora chance</h3><div class="bar" style="background:linear-gradient(90deg,${AUR_RAMP.map(r=>rgb(r[1])).join(',')})"></div><div class="ticks"><span>10%</span><span>50%</span><span>90%</span></div><p class="layer-note"><span id="aurSrc">${auroraSource()}</span> Brightest where it’s dark enough to see; faded on the daylight side.</p></div>`);
   $('#layers').insertAdjacentHTML('beforeend', basemapHTML()); wireBasemap($('#layers'));
   $('#layers').querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{ S.layer=b.dataset.layer; store.set('layer',S.layer); buildLayers(); render(); });
   $('#layers').querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ S.ov[b.dataset.ov]=!S.ov[b.dataset.ov]; store.set('ov',S.ov); buildLayers(); render(); });
@@ -298,11 +318,14 @@ function draw(){
         const a = 0.15*clamp((sunAlt+0.8)/6,0,1);
         R=255; Gc=206; B=120; A=Math.max(A,a);
       }
-      if(auroraOn && sunAlt < -6){
-        let pa = 0;
-        if(useOv) pa = clamp(ovAt(lat,lon)/40,0,1);
-        else if(kpNow!=null){ const ml=C.geomagLat(lat,lon), edge=67-2.5*kpNow; pa = ml>=edge ? clamp(1-(ml-edge-6)/6,0,1)*0.85 : clamp(1-(edge-ml)/3,0,1)*0.35; }
-        if(pa>0.02){ const a=0.55*pa, na=a+A*(1-a); R=(70*a+R*A*(1-a))/na; Gc=(230*a+Gc*A*(1-a))/na; B=(140*a+B*A*(1-a))/na; A=na; }
+      if(auroraOn && lat>35 || auroraOn && lat<-35){
+        // whole oval, like NOAA's map; full strength where it is dark enough to see, faded in daylight
+        const pr = useOv ? ovAt(lat,lon) : kpNow!=null ? kpProb(kpNow,lat,lon) : 0;
+        if(pr>4){
+          const dark = sunAlt<=-12 ? 1 : sunAlt>=0 ? 0.3 : 0.3+0.7*(-sunAlt/12);
+          const col = auroraRGB(pr), a = clamp((pr-4)/22,0,1)*0.78*dark, na=a+A*(1-a);
+          R=(col[0]*a+R*A*(1-a))/na; Gc=(col[1]*a+Gc*A*(1-a))/na; B=(col[2]*a+B*A*(1-a))/na; A=na;
+        }
       }
       for(const b of bodies){
         const alt = C.altFast(lat,lon,b.ra,b.dec,sky.g);
@@ -461,6 +484,7 @@ const slider=$('#tslider');
 function nowIndex(){ const now=Date.now()/1000; let i=0; while(i<71 && S.times[i+1]<=now) i++; return i; }
 function setTime(i){
   S.ti = clamp(i,0,71); slider.value=S.ti;
+  { const as=$('#aurSrc'); if(as) as.textContent=auroraSource(); }
   const d=tDate(S.ti);
   $('#tTime').textContent = fmtFull.format(d).replace(/\s?([AP])M/,(m,a)=>a==='A'?' am':' pm');
   const sun = C.topo('Sun', d, S.sel.lat, S.sel.lon).alt;
