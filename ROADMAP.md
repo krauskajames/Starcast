@@ -164,6 +164,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 
 ## Version history
 
+- **v3.1.1 (Oct 21, 2026):** The alert job now finishes quietly, instead of failing and emailing you, when alerts haven't been set up yet. Clearer message when the settings secret is pasted incorrectly.
 - **v3.1 (Oct 20, 2026):** Fixed live forecasts failing (too many requests for Open-Meteo's free limit) with a request budget and gradual loading; no more sample weather on failure. "Where to go" rebuilt around real named places. Added base maps and a "None" weather layer.
 - **v3.0 (Oct 20, 2026):** North America coverage (US, Alaska, Canada); place search, typed coordinates, current location, home spot, horizon profiles; observing plan, red view, sky chart, observing log and Messier checklist; full Messier catalog; gear profiles with binoculars and naked eye, eyepiece advisor, photography helper and framing preview; Jupiter's moons, Moon terminator features, lunar occultations, ISS passes; forecast confidence, driving times, park hours; install as an app, backup and restore; weekly outlook alert.
 - **v2.0 (Oct 20, 2026):** Light and dark themes, light-pollution layer and Bortle estimates, aurora, "Where to go," real alerts through GitHub Actions.

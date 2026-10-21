@@ -24,9 +24,10 @@ const env = process.env;
 
 function loadConfig() {
   const raw = env.ALERTS_CONFIG && env.ALERTS_CONFIG.trim() ? env.ALERTS_CONFIG : (fs.existsSync(args.config || 'alerts.json') ? fs.readFileSync(args.config || 'alerts.json', 'utf8') : null);
-  if (!raw) throw new Error('No settings found. Add the ALERTS_CONFIG secret (Starcast → Saved → Copy alert settings).');
-  const cfg = JSON.parse(raw);
-  if (!cfg.locations || !cfg.locations.length) throw new Error('ALERTS_CONFIG has no locations with alerts turned on.');
+  if (!raw) throw new NotSetUp('No alert settings yet, so nothing was checked. To turn alerts on, add the ALERTS_CONFIG secret (Starcast → Saved → Alerts → Copy alert settings).');
+  let cfg;
+  try { cfg = JSON.parse(raw); } catch (e) { throw new Error('ALERTS_CONFIG is not valid alert settings. Copy it again from Starcast → Saved → Alerts → Copy alert settings, and paste it whole.'); }
+  if (!cfg.locations || !cfg.locations.length) throw new NotSetUp('ALERTS_CONFIG has no saved spots with alerts turned on, so nothing was checked.');
   cfg.rules = Object.assign({ quality: 'good', minHours: 2, aurora: true }, cfg.rules || {});
   cfg.timezone = cfg.timezone || 'America/Chicago';
   return cfg;
@@ -161,4 +162,12 @@ function mock(url) {
   return { hourly: h };
 }
 
-main().catch(e => { console.error(e.message); process.exit(1); });
+class NotSetUp extends Error {}
+main().catch(e => {
+  if (e instanceof NotSetUp) {
+    // Not an error: alerts just haven't been set up yet. Finish quietly so GitHub doesn't email a failure.
+    console.log(`::notice title=Alerts not set up yet::${e.message}`);
+    process.exit(0);
+  }
+  console.error(e.message); process.exit(1);
+});
