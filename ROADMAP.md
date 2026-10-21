@@ -13,7 +13,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 - Web app that runs in any browser first, installable on a phone's home screen; a store app maybe later.
 - Single user for now; built so accounts can be added later.
 - Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts work anywhere.
-- Weather data: Open-Meteo (free for non-commercial use: 600 calls a minute, 5,000 an hour, 10,000 a day, counted per location). Starcast keeps a running budget below those limits: a 3° × 3.5° continental grid loads first, detailed 0.5° tiles load gradually for the region you zoom into, and everything is cached for 90 minutes. If data can't load, the map shows no weather rather than sample weather.
+- Weather data: Open-Meteo (free for non-commercial use: 600 calls a minute, 5,000 an hour, 10,000 a day, counted per location). Starcast keeps a running budget below those limits: a 3° × 3.5° continental grid loads first, detailed 0.5° tiles load gradually for the region you zoom into, and everything is cached for 2 hours. If data can't load, the map shows no weather rather than sample weather.
 - Astronomy math runs in the browser (Astronomy Engine, satellite.js), so sky positions, events and seasons need no outside data.
 - Alerts run as a free scheduled GitHub Actions job; personal locations live in a repository secret.
 
