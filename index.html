@@ -1608,7 +1608,7 @@ function layerVal(L, t, lat, lon, sunAlt, detail){
     const c=GV('cloud',t,lat,lon); if(isNaN(c)) return NaN;
     const s=GV('seeing',t,lat,lon), tr=GV('transp',t,lat,lon);
     const dark = sunAlt<=-12?1:sunAlt<=0?(-sunAlt)/12*0.8:0;
-    return 100*Math.pow((100-c)/100,1.5)*dark*(0.45+0.55*(s+tr-2)/8);
+    return 100*Math.pow(clamp((100-c)/100,0,1),1.5)*dark*(0.45+0.55*clamp((s+tr-2)/8,0,1));
   }
   return GV(L.key,t,lat,lon);
 }
@@ -2667,7 +2667,12 @@ function tileTrust(T, lat, lon){
   return w*w*(3-2*w);
 }
 // detail=false gives the smooth continental view (used when zoomed out)
+const PCT = new Set(['cloud','hcloud','rh']);
 function gridVal(key, t, lat, lon, detail){
+  const v = gridValRaw(key, t, lat, lon, detail);
+  return PCT.has(key) ? Math.min(100, Math.max(0, v)) : v; // blending can overshoot 100% by a rounding hair
+}
+function gridValRaw(key, t, lat, lon, detail){
   const base = layerValue(WX.coarse,key,t,lat,lon);
   if(detail===false) return base;
   const tile = WX.tiles.get(tileSpec(lat,lon).id);

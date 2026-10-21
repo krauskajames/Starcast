@@ -164,6 +164,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 
 ## Version history
 
+- **v3.1.4 (Oct 21, 2026):** Fixed twinkling holes in the Observing layer under overcast skies (a rounding overshoot past 100% cloud produced invalid values).
 - **v3.1.3 (Oct 21, 2026):** Smoother weather map: finer continental grid (3° × 3.5°), smooth interpolation between points, detailed patches used only when zoomed in and blended in at their edges, so no more blobs or a hard-edged square around your spot.
 - **v3.1.2 (Oct 21, 2026):** Aurora layer redrawn to match NOAA's map: the whole oval in NOAA's green-yellow-red probability colors, smoothly interpolated, faded rather than cut off on the daylight side, with a legend saying which NOAA forecast is shown.
 - **v3.1.1 (Oct 21, 2026):** The alert job now finishes quietly, instead of failing and emailing you, when alerts haven't been set up yet. Clearer message when the settings secret is pasted incorrectly.

@@ -197,7 +197,7 @@ function layerVal(L, t, lat, lon, sunAlt, detail){
     const c=GV('cloud',t,lat,lon); if(isNaN(c)) return NaN;
     const s=GV('seeing',t,lat,lon), tr=GV('transp',t,lat,lon);
     const dark = sunAlt<=-12?1:sunAlt<=0?(-sunAlt)/12*0.8:0;
-    return 100*Math.pow((100-c)/100,1.5)*dark*(0.45+0.55*(s+tr-2)/8);
+    return 100*Math.pow(clamp((100-c)/100,0,1),1.5)*dark*(0.45+0.55*clamp((s+tr-2)/8,0,1));
   }
   return GV(L.key,t,lat,lon);
 }

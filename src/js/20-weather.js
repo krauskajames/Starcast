@@ -246,7 +246,12 @@ function tileTrust(T, lat, lon){
   return w*w*(3-2*w);
 }
 // detail=false gives the smooth continental view (used when zoomed out)
+const PCT = new Set(['cloud','hcloud','rh']);
 function gridVal(key, t, lat, lon, detail){
+  const v = gridValRaw(key, t, lat, lon, detail);
+  return PCT.has(key) ? Math.min(100, Math.max(0, v)) : v; // blending can overshoot 100% by a rounding hair
+}
+function gridValRaw(key, t, lat, lon, detail){
   const base = layerValue(WX.coarse,key,t,lat,lon);
   if(detail===false) return base;
   const tile = WX.tiles.get(tileSpec(lat,lon).id);
