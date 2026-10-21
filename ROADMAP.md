@@ -13,7 +13,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 - Web app that runs in any browser first, installable on a phone's home screen; a store app maybe later.
 - Single user for now; built so accounts can be added later.
 - Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts work anywhere.
-- Weather data: Open-Meteo (free for non-commercial use: 600 calls a minute, 5,000 an hour, 10,000 a day, counted per location). Starcast keeps a running budget below those limits: a light 4° × 5° continental grid loads first, detailed 0.5° tiles load gradually for the region you zoom into, and everything is cached for 90 minutes. If data can't load, the map shows no weather rather than sample weather.
+- Weather data: Open-Meteo (free for non-commercial use: 600 calls a minute, 5,000 an hour, 10,000 a day, counted per location). Starcast keeps a running budget below those limits: a 3° × 3.5° continental grid loads first, detailed 0.5° tiles load gradually for the region you zoom into, and everything is cached for 90 minutes. If data can't load, the map shows no weather rather than sample weather.
 - Astronomy math runs in the browser (Astronomy Engine, satellite.js), so sky positions, events and seasons need no outside data.
 - Alerts run as a free scheduled GitHub Actions job; personal locations live in a repository secret.
 
@@ -164,6 +164,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 
 ## Version history
 
+- **v3.1.3 (Oct 21, 2026):** Smoother weather map: finer continental grid (3° × 3.5°), smooth interpolation between points, detailed patches used only when zoomed in and blended in at their edges, so no more blobs or a hard-edged square around your spot.
 - **v3.1.2 (Oct 21, 2026):** Aurora layer redrawn to match NOAA's map: the whole oval in NOAA's green-yellow-red probability colors, smoothly interpolated, faded rather than cut off on the daylight side, with a legend saying which NOAA forecast is shown.
 - **v3.1.1 (Oct 21, 2026):** The alert job now finishes quietly, instead of failing and emailing you, when alerts haven't been set up yet. Clearer message when the settings secret is pasted incorrectly.
 - **v3.1 (Oct 20, 2026):** Fixed live forecasts failing (too many requests for Open-Meteo's free limit) with a request budget and gradual loading; no more sample weather on failure. "Where to go" rebuilt around real named places. Added base maps and a "None" weather layer.

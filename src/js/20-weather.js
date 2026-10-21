@@ -8,7 +8,7 @@
 const VARS = ['cloud_cover','cloud_cover_high','relative_humidity_2m','dew_point_2m','temperature_2m','wind_speed_10m','wind_speed_250hPa','wind_speed_500hPa'];
 const KEYS = ['cloud','hcloud','rh','td','temp','w10','j250','w500'];
 const API = 'https://api.open-meteo.com/v1/forecast';
-const CACHE_MS = 90*60e3;
+const CACHE_MS = 120*60e3;
 const DEMO = /[?&]demo\b/.test(location.search); // sample weather only when asked for (testing)
 function omURL(lats, lons, days){
   return `${API}?latitude=${lats.join(',')}&longitude=${lons.join(',')}&hourly=${VARS.join(',')}&forecast_days=${days||4}&timeformat=unixtime&timezone=GMT`;
@@ -35,7 +35,7 @@ function omSpend(w){ const now=Date.now(); OM.use = OM.use.filter(u=>u[0]>now-86
 class RateLimited extends Error { constructor(until, reason){ super(reason); this.until=until; } }
 // weight per Open-Meteo: places × (variables / 10), minimum one week of data
 async function omGet(url, places, nVars, signal){
-  const w = places * Math.max(0.1, nVars/10);
+  const w = places * Math.max(1, nVars/10); // counted conservatively: at least one call per place
   const wait = omWait(w);
   if(wait !== 0) throw new RateLimited(wait<0 ? nextUtcMidnight() : Date.now()+wait, wait<0 ? 'daily' : 'budget');
   omSpend(w);
@@ -70,7 +70,7 @@ function nearNA(lat, lon, dLat, dLon){
 }
 
 /* --- grid layers --- */
-const COARSE = { id:'coarse2', lat0:24, lon0:-168, dLat:4, dLon:5, nLat:13, nLon:24 };
+const COARSE = { id:'coarse3', lat0:24, lon0:-168, dLat:3, dLon:3.5, nLat:17, nLon:34 };
 const TILE_DEG = 5, FINE = 0.5;
 function tileSpec(lat, lon){
   const la = Math.floor(lat/TILE_DEG)*TILE_DEG, lo = Math.floor(lon/TILE_DEG)*TILE_DEG;
@@ -206,6 +206,12 @@ async function loadVisibleTiles(){
 }
 
 /* --- reading values --- */
+// value of one grid point (NaN when missing or not loaded)
+function gridPoint(L, a, base, i, j){
+  if(i<0||j<0||i>=L.nLat||j>=L.nLon) return NaN;
+  const p=L.idx[i*L.nLon+j]; return p<0 ? NaN : a[base+p];
+}
+const cr = (p0,p1,p2,p3,t) => p1 + 0.5*t*(p2-p0 + t*(2*p0-5*p1+4*p2-p3 + t*(3*(p1-p2)+p3-p0)));
 function layerValue(L, key, t, lat, lon){
   if(!L || L.empty || !L.f[key] || !L.nT) return NaN;
   const tt = t + Math.round((S.times[0]-L.t0)/3600);
@@ -213,15 +219,42 @@ function layerValue(L, key, t, lat, lon){
   const fi=(lat-L.lat0)/L.dLat, fj=(lon-L.lon0)/L.dLon;
   if(fi<0||fj<0||fi>L.nLat-1||fj>L.nLon-1) return NaN;
   const i=Math.min(Math.floor(fi),L.nLat-2), j=Math.min(Math.floor(fj),L.nLon-2), di=fi-i, dj=fj-j, a=L.f[key], b=tt*L.np;
-  let s=0, w=0;
-  const add=(ii,jj,wt)=>{ const p=L.idx[ii*L.nLon+jj]; if(p<0||wt<=0) return; const v=a[b+p]; if(isNaN(v)) return; s+=v*wt; w+=wt; };
+  // smooth (Catmull-Rom) interpolation over the 4x4 neighbourhood when it is complete
+  const g=[]; let full=true;
+  for(let m=-1;m<=2&&full;m++){ const row=[]; for(let n=-1;n<=2;n++){ const v=gridPoint(L,a,b,i+m,j+n); if(isNaN(v)){ full=false; break; } row.push(v); } g.push(row); }
+  if(full){
+    const rows=g.map(r=>cr(r[0],r[1],r[2],r[3],dj));
+    const v=cr(rows[0],rows[1],rows[2],rows[3],di);
+    const lo=Math.min(g[1][1],g[1][2],g[2][1],g[2][2]), hi=Math.max(g[1][1],g[1][2],g[2][1],g[2][2]);
+    return Math.max(lo, Math.min(hi, v)); // no overshoot beyond the surrounding values
+  }
+  // near edges or gaps: bilinear over the corners that exist
+  let s2=0, w=0;
+  const add=(ii,jj,wt)=>{ const v=gridPoint(L,a,b,ii,jj); if(isNaN(v)||wt<=0) return; s2+=v*wt; w+=wt; };
   add(i,j,(1-di)*(1-dj)); add(i,j+1,(1-di)*dj); add(i+1,j,di*(1-dj)); add(i+1,j+1,di*dj);
-  return w>0.05 ? s/w : NaN;
+  return w>0 ? s2/w : NaN;
 }
-function gridVal(key, t, lat, lon){
+const tileReady = T => T && !T.empty && T.nT && !(T.todo && T.todo.length) && T.f.seeing;
+// how far (0..1) to trust the detail tile here: fades out over 1 degree toward edges
+// that have no finished neighbouring tile, so detail blends into the continental grid
+function tileTrust(T, lat, lon){
+  const F=1.0, sides=[
+    [lat-T.lat0, tileSpec(T.lat0-0.1, lon)], [T.lat0+TILE_DEG-lat, tileSpec(T.lat0+TILE_DEG+0.1, lon)],
+    [lon-T.lon0, tileSpec(lat, T.lon0-0.1)], [T.lon0+TILE_DEG-lon, tileSpec(lat, T.lon0+TILE_DEG+0.1)] ];
+  let w=1;
+  for(const [d,sp] of sides){ if(d>=F) continue; if(tileReady(WX.tiles.get(sp.id))) continue; w=Math.min(w, Math.max(0,d/F)); }
+  return w*w*(3-2*w);
+}
+// detail=false gives the smooth continental view (used when zoomed out)
+function gridVal(key, t, lat, lon, detail){
+  const base = layerValue(WX.coarse,key,t,lat,lon);
+  if(detail===false) return base;
   const tile = WX.tiles.get(tileSpec(lat,lon).id);
-  if(tile){ const v=layerValue(tile,key,t,lat,lon); if(!isNaN(v)) return v; }
-  return layerValue(WX.coarse,key,t,lat,lon);
+  if(!tileReady(tile)) return base;
+  const v=layerValue(tile,key,t,lat,lon); if(isNaN(v)) return base;
+  if(isNaN(base)) return v;
+  const w=tileTrust(tile,lat,lon);
+  return base*(1-w) + v*w;
 }
 function setStatus(kind, text){
   const el = $('#status'); el.className = 'status '+kind;

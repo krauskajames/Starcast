@@ -189,16 +189,17 @@ const OVERLAYS = [
   {id:'Jupiter', name:'Jupiter', col:[240,196,140]},
   {id:'Saturn', name:'Saturn', col:[226,206,112]}
 ];
-function layerVal(L, t, lat, lon, sunAlt){
-  if(L.key==='dew'){ const T=gridVal('temp',t,lat,lon), D=gridVal('td',t,lat,lon); return T-D; }
+function layerVal(L, t, lat, lon, sunAlt, detail){
+  const GV=(k,tt,la,lo)=>gridVal(k,tt,la,lo,detail);
+  if(L.key==='dew'){ const T=GV('temp',t,lat,lon), D=GV('td',t,lat,lon); return T-D; }
   if(L.key==='lp') return lpVal(lat,lon,0.05);
   if(L.key==='obs'){
-    const c=gridVal('cloud',t,lat,lon); if(isNaN(c)) return NaN;
-    const s=gridVal('seeing',t,lat,lon), tr=gridVal('transp',t,lat,lon);
+    const c=GV('cloud',t,lat,lon); if(isNaN(c)) return NaN;
+    const s=GV('seeing',t,lat,lon), tr=GV('transp',t,lat,lon);
     const dark = sunAlt<=-12?1:sunAlt<=0?(-sunAlt)/12*0.8:0;
     return 100*Math.pow((100-c)/100,1.5)*dark*(0.45+0.55*(s+tr-2)/8);
   }
-  return gridVal(L.key,t,lat,lon);
+  return GV(L.key,t,lat,lon);
 }
 function buildLayers(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
@@ -359,7 +360,7 @@ function draw(){
         const ll=proj.invert([bx0+x*ws+ws/2, by0+y*ws+ws/2]); if(!ll||isNaN(ll[0])) continue;
         if(ll[1]<23||ll[1]>73||ll[0]<-172||ll[0]>-50) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
-        const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt); const c=L.sc(v); if(!c) continue;
+        const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=5); const c=L.sc(v); if(!c) continue;
         const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=bmOn?170:232;
       }
       wxCtx.putImageData(wimg,0,0);

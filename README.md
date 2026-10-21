@@ -66,9 +66,9 @@ Seeing, transparency and light pollution are estimates. Use **Forecast checks** 
 The light-pollution model counts towns of a few thousand people only in the Upper Midwest. Elsewhere it uses cities of about 30,000 or more, so some rural spots near small towns read a little darker than they really are. You can override sky darkness for any saved spot.
 
 Open-Meteo's free tier allows 600 calls a minute, 5,000 an hour and 10,000 a day, and counts each place in a request as a call. Starcast keeps a running budget below those limits:
-- A light grid for the whole continent loads first (about 180 places).
+- A grid for the whole continent loads first (about 320 places, one point every 3° by 3.5°).
 - Detailed 0.5° data loads a few areas at a time for wherever you zoom in.
-- Everything is cached in your browser for 90 minutes.
+- Everything is cached in your browser for 2 hours.
 
 If the limit is reached anyway, the line under the logo says so and when loading will continue. Starcast never fills the map with made-up weather; add `?demo` to the address to see sample weather for testing.
 
