@@ -102,6 +102,17 @@ button{cursor:pointer}
 .legend{display:flex;flex-direction:column;gap:4px}
 .legend .bar{height:8px;border-radius:2px}
 .legend .ticks{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted)}
+.dimrow td{color:var(--faint)}
+.lognote{width:100%;margin-top:6px;font-size:12.5px;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:5px 7px}
+.sunnow{display:flex;gap:10px;align-items:flex-start;margin-bottom:4px}
+.sunnow img{border-radius:50%;flex:none;background:#000}
+.math{border:1px solid var(--line);border-radius:6px;padding:8px 10px;background:var(--raise)}
+.math summary{cursor:pointer;font-size:13px;font-weight:700}
+.math dl{margin:8px 0 0;display:grid;gap:4px}
+.math dt{font-size:12px;font-weight:700;color:var(--fg);margin-top:6px}
+.math dd{margin:0;font-size:12.5px;line-height:1.45;color:var(--fg-2)}
+.opac{display:flex;align-items:center;gap:8px;font-size:11.5px;color:var(--muted);margin-top:2px}
+.opac input{flex:1;min-width:0;accent-color:var(--accent)}
 
 /* time bar */
 .timebar{position:absolute;left:0;right:0;bottom:0;padding:10px 16px calc(12px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));
@@ -827,6 +838,10 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     MESSIER.forEach(r => { if (have.has(r[0])) return;
       DSO.push({ id: r[0], name: r[1] ? `${r[1]} (${r[0]})` : `${r[0]} (${short[r[6]] || r[6]})`, ra: r[2], dec: r[3], mag: r[4], size: r[5], kind: r[6], lowSB: !!r[7], photo: !!r[8], messier: true }); });
     DSO.forEach(d => { if (/^M\d+$/.test(d.id)) d.messier = true; }); }
+  // Showpieces beyond Messier (positions from the d3-celestial catalog; visual magnitudes)
+  const NGC_EXTRA = [["NGC 253","Sculptor Galaxy",0.793,-25.29,7.6,27.5,"galaxy",0,1],["NGC 7293","Helix Nebula",22.494,-20.84,7.6,25,"nebula",1,1],["NGC 457","Owl Cluster",1.326,58.29,6.4,20,"cluster",0,0],["NGC 6826","Blinking Planetary",19.747,50.53,8.8,0.5,"nebula",0,0],["NGC 6543","Cat's Eye Nebula",17.976,66.63,8.1,0.4,"nebula",0,0],["NGC 7662","Blue Snowball",23.432,42.53,8.3,0.6,"nebula",0,0],["NGC 2392","Eskimo Nebula",7.486,20.91,9.1,0.8,"nebula",0,0],["NGC 6992","Eastern Veil Nebula",20.939,31.74,7,60,"nebula",1,1],["NGC 6960","Western Veil (Witch's Broom)",20.761,30.71,7,60,"nebula",1,1],["NGC 891","Edge-on galaxy NGC 891",2.376,42.35,10.1,13.5,"galaxy",1,1],["NGC 4631","Whale Galaxy",12.702,32.54,9.2,9.3,"galaxy",0,1],["NGC 3242","Ghost of Jupiter",10.413,-18.64,8.6,0.6,"nebula",0,0],["NGC 7009","Saturn Nebula",21.07,-11.36,8,0.7,"nebula",0,0],["NGC 752","Open cluster NGC 752",1.961,37.78,5.7,75,"cluster",0,0],["NGC 7789","Caroline's Rose",23.957,56.71,6.7,30,"cluster",0,1],["NGC 2244","Rosette Nebula and cluster",6.532,4.94,4.8,80,"nebula",1,1],["NGC 2403","Galaxy NGC 2403",7.614,65.6,8.9,22,"galaxy",0,1],["NGC 6946","Fireworks Galaxy",20.581,60.15,9.6,11.5,"galaxy",1,1],["NGC 3628","Hamburger Galaxy",11.338,13.59,9.5,10.6,"galaxy",0,1],["NGC 663","Open cluster NGC 663",1.769,61.23,7.1,15,"cluster",0,0],["NGC 6633","Open cluster NGC 6633",18.459,6.57,4.6,20,"cluster",0,0],["NGC 2903","Galaxy NGC 2903",9.536,21.5,9,6.1,"galaxy",0,0],["NGC 7331","Galaxy NGC 7331",22.618,34.42,9.5,10.5,"galaxy",0,1],["NGC 2264","Christmas Tree Cluster",6.683,9.89,3.9,20,"cluster",0,1],["NGC 7635","Bubble Nebula",23.347,61.2,10,15,"nebula",1,1],["NGC 6888","Crescent Nebula",20.202,38.35,7.4,20,"nebula",1,1],["NGC 281","Pacman Nebula",0.874,56.56,7.4,35,"nebula",1,1],["NGC 2841","Galaxy NGC 2841",9.367,50.98,9.2,6.3,"galaxy",0,0],["NGC 6572","Planetary nebula NGC 6572",18.202,6.85,8.1,0.3,"nebula",0,0],["NGC 7027","Planetary nebula NGC 7027",21.117,42.24,8.5,0.3,"nebula",0,0],["NGC 5139","Omega Centauri",13.446,-47.48,3.9,55,"globular",0,1]];
+  { const have = new Set(DSO.map(d => d.id));
+    NGC_EXTRA.forEach(r => { if (!have.has(r[0])) DSO.push({ id: r[0], name: r[1].includes(r[0]) ? r[1] : `${r[1]} (${r[0]})`, ra: r[2], dec: r[3], mag: r[4], size: r[5], kind: r[6], lowSB: !!r[7], photo: !!r[8] }); }); }
   const KIND_LABEL = { galaxy: 'Galaxy', cluster: 'Star cluster', nebula: 'Nebula', globular: 'Globular cluster', double: 'Double star', milkyway: 'Milky Way', planet: 'Planet', moon: 'Moon' };
 
   // Can this target be seen with naked eye / the scope at this site?
@@ -1265,11 +1280,24 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     let e = [-u[1], u[0], 0]; const el = Math.hypot(e[0], e[1]); e = [e[0] / el, e[1] / el, 0];
     const n = [u[1] * e[2] - u[2] * e[1], u[2] * e[0] - u[0] * e[2], u[0] * e[1] - u[1] * e[0]];
     const out = {};
+    // direction from Jupiter toward the Sun, for moon shadows on the cloud tops
+    const hv = A.HelioVector('Jupiter', new Date(date.getTime() - lt * 1000)), hl = Math.hypot(hv.x, hv.y, hv.z), sd = [-hv.x / hl, -hv.y / hl, -hv.z / hl];
+    const proj = w => [(w[0] * e[0] + w[1] * e[1] + w[2] * e[2]) / RJ_AU, (w[0] * n[0] + w[1] * n[1] + w[2] * n[2]) / RJ_AU, (w[0] * u[0] + w[1] * u[1] + w[2] * u[2]) / RJ_AU];
     for (const k of ['io', 'europa', 'ganymede', 'callisto']) {
       const m = jm[k], v = [m.x, m.y, m.z];
+      // shadow: the moon is between the Sun and Jupiter and its shadow line hits the disk
+      const along = v[0] * sd[0] + v[1] * sd[1] + v[2] * sd[2];
+      const perp = [v[0] - along * sd[0], v[1] - along * sd[1], v[2] - along * sd[2]];
+      const perpR = Math.hypot(perp[0], perp[1], perp[2]) / RJ_AU;
+      let shadow = null;
+      if (along > 0 && perpR < 0.97) {
+        const depth = Math.sqrt(1 - perpR * perpR) * RJ_AU; // where the shadow line meets the surface
+        const hit = [perp[0] + sd[0] * depth, perp[1] + sd[1] * depth, perp[2] + sd[2] * depth], q = proj(hit);
+        if (q[2] < 0.2) shadow = { x: q[0], y: q[1] };
+      }
       const dx = (v[0] * e[0] + v[1] * e[1] + v[2] * e[2]) / RJ_AU, dy = (v[0] * n[0] + v[1] * n[1] + v[2] * n[2]) / RJ_AU, dz = (v[0] * u[0] + v[1] * u[1] + v[2] * u[2]) / RJ_AU;
       const onDisk = Math.hypot(dx, dy / 0.935) < 1;
-      out[k] = { x: dx, y: dy, front: dz < 0, transit: onDisk && dz < 0, hidden: onDisk && dz > 0 };
+      out[k] = { x: dx, y: dy, front: dz < 0, transit: onDisk && dz < 0, hidden: onDisk && dz > 0, shadow };
     }
     return out;
   }
@@ -1282,9 +1310,12 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         const kind = jm[k].transit ? 'transit' : jm[k].hidden ? 'hidden' : null, prev = state[k];
         if (kind && (!prev || prev.kind !== kind)) { state[k] = { kind, start: new Date(t) }; }
         if ((!kind || (prev && prev.kind !== kind)) && prev && prev.kind) { ev.push({ moon: MOON_NAMES[k], kind: prev.kind, start: prev.start, end: new Date(t) }); state[k] = kind ? { kind, start: new Date(t) } : null; }
+        const sk = k + ':shadow', sp = state[sk], on = !!jm[k].shadow;
+        if (on && !sp) state[sk] = { kind: 'shadow', start: new Date(t) };
+        if (!on && sp) { ev.push({ moon: MOON_NAMES[k], kind: 'shadow', start: sp.start, end: new Date(t) }); state[sk] = null; }
       }
     }
-    for (const k in state) if (state[k]) ev.push({ moon: MOON_NAMES[k], kind: state[k].kind, start: state[k].start, end: null });
+    for (const k in state) if (state[k]) ev.push({ moon: MOON_NAMES[k.split(':')[0]], kind: state[k].kind, start: state[k].start, end: null });
     return ev.sort((a, b) => a.start - b.start);
   }
 
@@ -1335,6 +1366,28 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
       }
     }
     return out.sort((a, b) => a.time - b.time);
+  }
+
+  /* ---------- solar eclipses as seen from one place ---------- */
+  function localSolarEclipses(start, end, lat, lon) {
+    const obs = new A.Observer(lat, lon, 0), out = [];
+    try {
+      let e = A.SearchLocalSolarEclipse(start, obs);
+      for (let k = 0; k < 80 && e.peak.time.date <= end; k++) {
+        if (e.peak.altitude > 0) out.push({ date: e.peak.time.date, kind: e.kind, obscuration: e.obscuration, altitude: e.peak.altitude,
+          begin: e.partial_begin && e.partial_begin.time.date, finish: e.partial_end && e.partial_end.time.date });
+        e = A.NextLocalSolarEclipse(e.peak.time, obs);
+      }
+    } catch (err) { }
+    return out;
+  }
+  const ECL_MEMO = new Map();
+  function nextVisibleSolarEclipse(from, lat, lon) {
+    const key = lat.toFixed(1) + ',' + lon.toFixed(1) + ',' + from.toISOString().slice(0, 10);
+    if (ECL_MEMO.has(key)) return ECL_MEMO.get(key);
+    const list = localSolarEclipses(from, new Date(from.getTime() + 40 * 365.25 * 864e5), lat, lon);
+    const v = list.find(x => x.obscuration >= 0.05) || null; // skip slivers barely worth noticing
+    ECL_MEMO.set(key, v); return v;
   }
 
   /* ---------- calendar ---------- */
@@ -1402,6 +1455,11 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
         prev = L;
       }
     }
+    // solar eclipses visible from this location
+    localSolarEclipses(start, end, lat, lon).forEach(x => {
+      const kindName = { total: 'Total', annular: 'Annular', partial: 'Partial' }[x.kind] || 'Partial';
+      push(x.date, 'eclipse', `${kindName} solar eclipse`, `${Math.round(x.obscuration * 100)}% of the Sun covered at its peak from here, ${Math.round(x.altitude)}° up. Use eclipse glasses or a solar filter for every moment of the partial phases.`, { visible: true });
+    });
     // meteor showers (peak night, local)
     for (let y = start.getFullYear(); y <= end.getFullYear(); y++) {
       SHOWERS.forEach(s => {
@@ -1417,7 +1475,7 @@ Resources:`;for(let t of c){if(!t||typeof t!=`string`)throw Error(`@supabase/aut
     return ev;
   }
 
-  const api = { jupiterMoons, jupiterEvents, moonTerminator, occultations, LUNAR, azFast, compass, whereText, suggestView, eyepieceAdvice, exposurePlan, trailLimit, shutterText, MESSIER, horizonAt, CITIES, skyGlow, lightPollution, inLPBox, kmBetween, geomagLat, auroraChance, kpNeeded, nightAlert, marsLs, marsSeason, saturnRings, ringText, solarDays, A, clamp, lerp, altFast, geoEq, gast, topo, topoFixed, sepDeg, moonInfo, moonPhaseName, planetState, gearStats, estSeeing, estTransparency, PLANETS, DSO, KIND_LABEL, gearReach, scoreHour, rating, evaluateTargets, bestWindow, nights, calendar, NELM_BY_BORTLE };
+  const api = { localSolarEclipses, nextVisibleSolarEclipse, jupiterMoons, jupiterEvents, moonTerminator, occultations, LUNAR, azFast, compass, whereText, suggestView, eyepieceAdvice, exposurePlan, trailLimit, shutterText, MESSIER, horizonAt, CITIES, skyGlow, lightPollution, inLPBox, kmBetween, geomagLat, auroraChance, kpNeeded, nightAlert, marsLs, marsSeason, saturnRings, ringText, solarDays, A, clamp, lerp, altFast, geoEq, gast, topo, topoFixed, sepDeg, moonInfo, moonPhaseName, planetState, gearStats, estSeeing, estTransparency, PLANETS, DSO, KIND_LABEL, gearReach, scoreHour, rating, evaluateTargets, bestWindow, nights, calendar, NELM_BY_BORTLE };
   if (typeof module !== 'undefined') module.exports = api; else root.Core = api;
 })(this);
 
@@ -1457,6 +1515,7 @@ const S = {
   eval:null, savingName:null, confirmDel:null
 };
 S.layer = store.get('layer','cloud');
+S.wxOpacity = clamp(+store.get('layerOpacity', 0.9) || 0.9, 0.2, 1);
 // every saved spot gets a stable id so it can sync between devices
 if(S.saved.some(x=>!x.cid)){ S.saved.forEach(x=>{ if(!x.cid) x.cid=newId(); }); try{ localStorage.setItem('starcast.saved', JSON.stringify(S.saved)); }catch(e){} }
 if(!S.gear.filters) S.gear.filters = [{name:'UHC', type:'uhc'}];
@@ -1647,10 +1706,12 @@ function buildLayers(){
   const n=12, grad= L.key==='none' ? 'transparent' : Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
   $('#layers').innerHTML = `
     <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
-    <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p></div>
+    <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p>
+      ${L.key!=='none'?`<label class="opac"><span>Opacity</span><input type="range" id="wxOpacity" min="20" max="100" step="5" value="${Math.round(S.wxOpacity*100)}" aria-label="Weather layer opacity"><span class="mono" id="wxOpacityV">${Math.round(S.wxOpacity*100)}%</span></label>`:''}</div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
   if(S.ov.aurora) $('#layers').insertAdjacentHTML('beforeend', `<div class="lgroup legend"><h3>Aurora chance</h3><div class="bar" style="background:linear-gradient(90deg,${AUR_RAMP.map(r=>rgb(r[1])).join(',')})"></div><div class="ticks"><span>10%</span><span>50%</span><span>90%</span></div><p class="layer-note"><span id="aurSrc">${auroraSource()}</span> Brightest where it’s dark enough to see; faded on the daylight side.</p></div>`);
   $('#layers').insertAdjacentHTML('beforeend', basemapHTML()); wireBasemap($('#layers'));
+  const op=$('#wxOpacity'); if(op){ op.oninput=()=>{ S.wxOpacity=+op.value/100; $('#wxOpacityV').textContent=op.value+'%'; render(); }; op.onchange=()=>store.set('layerOpacity',S.wxOpacity); }
   $('#layers').querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{ S.layer=b.dataset.layer; store.set('layer',S.layer); buildLayers(); render(); });
   $('#layers').querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ S.ov[b.dataset.ov]=!S.ov[b.dataset.ov]; store.set('ov',S.ov); buildLayers(); render(); });
 }
@@ -1688,6 +1749,7 @@ const proj = d3.geoOrthographic().clipAngle(90).precision(0.4);
 const path = d3.geoPath(proj, ctx);
 let W=0,H=0,DPR=1, baseScale=1;
 const ovCanvas = document.createElement('canvas'), ovCtx = ovCanvas.getContext('2d');
+const ovCanvas2 = document.createElement('canvas'), ovCtx2 = ovCanvas2.getContext('2d');
 const wxCanvas = document.createElement('canvas'), wxCtx = wxCanvas.getContext('2d');
 function resize(){
   const r = canvas.getBoundingClientRect();
@@ -1736,7 +1798,10 @@ function draw(){
   const step = quality==='hi' ? 3 : 6;
   const ow = Math.ceil(W/step), oh = Math.ceil(H/step);
   ovCanvas.width=ow; ovCanvas.height=oh;
-  const img = ovCtx.createImageData(ow,oh), px=img.data;
+  ovCanvas2.width=ow; ovCanvas2.height=oh;
+  const img = ovCtx.createImageData(ow,oh), px=img.data;      // under the weather: night and sunlit sides
+  const img2 = ovCtx2.createImageData(ow,oh), px2=img2.data;  // over the weather: aurora and planet zones
+  let anyTop=false;
   const bodies = sky.bodies, nightOn = S.ov.night, sunOn = S.ov.Sun;
   const auroraOn = S.ov.aurora, tu = S.times[S.ti];
   const useOv = auroraOn && S.aur.ov && Math.abs(tu*1000 - S.aur.ovTime) < 3*3600e3;
@@ -1760,6 +1825,8 @@ function draw(){
         const a = 0.15*clamp((sunAlt+0.8)/6,0,1);
         R=255; Gc=206; B=120; A=Math.max(A,a);
       }
+      if(A>0){ const k=(y*ow+x)*4; px[k]=R; px[k+1]=Gc; px[k+2]=B; px[k+3]=A*255; }
+      R=0; Gc=0; B=0; A=0;
       if(auroraOn && lat>35 || auroraOn && lat<-35){
         // whole oval, like NOAA's map; full strength where it is dark enough to see, faded in daylight
         const pr = useOv ? ovAt(lat,lon) : kpNow!=null ? kpProb(kpNow,lat,lon) : 0;
@@ -1778,12 +1845,13 @@ function draw(){
           R = (b.o.col[0]*a + R*A*(1-a))/na; Gc=(b.o.col[1]*a + Gc*A*(1-a))/na; B=(b.o.col[2]*a + B*A*(1-a))/na; A=na;
         }
       }
-      if(A>0){ const k=(y*ow+x)*4; px[k]=R; px[k+1]=Gc; px[k+2]=B; px[k+3]=A*255; }
+      if(A>0){ const k=(y*ow+x)*4; px2[k]=R; px2[k+1]=Gc; px2[k+2]=B; px2[k+3]=A*255; anyTop=true; }
     }
-    ovCtx.putImageData(img,0,0);
+    ovCtx.putImageData(img,0,0); ovCtx2.putImageData(img2,0,0);
     ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip();
     ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas,0,0,ow*step,oh*step); ctx.restore();
   }
+  const drawTopOverlay = () => { if(!anyTop) return; ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas2,0,0,ow*step,oh*step); ctx.restore(); };
   // weather raster over North America (US + Canada), clipped to land
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const k = r/baseScale;
@@ -1797,18 +1865,20 @@ function draw(){
       wxCanvas.width=ww; wxCanvas.height=wh;
       const wimg=wxCtx.createImageData(ww,wh), wp=wimg.data;
       const lpRes = k<6 ? 0.25 : 0.05;
+      const wxAlpha = Math.round(255*S.wxOpacity*(bmOn?0.8:1));
       for(let y=0;y<wh;y++) for(let x=0;x<ww;x++){
         const ll=proj.invert([bx0+x*ws+ws/2, by0+y*ws+ws/2]); if(!ll||isNaN(ll[0])) continue;
-        if(ll[1]<23||ll[1]>73||ll[0]<-172||ll[0]>-50) continue;
+        if(ll[1]<23||ll[1]>85||ll[0]<-172||ll[0]>-50) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
         const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=9); const c=L.sc(v); if(!c) continue;
-        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=bmOn?170:232;
+        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=wxAlpha;
       }
       wxCtx.putImageData(wimg,0,0);
       ctx.save(); ctx.beginPath(); path(NA_MASK); ctx.clip(); ctx.imageSmoothingEnabled=true;
       ctx.drawImage(wxCanvas, bx0, by0, ww*ws, wh*ws); ctx.restore();
     }
   }
+  drawTopOverlay();
   // lines
   ctx.lineJoin='round';
   ctx.beginPath(); path(graticule); ctx.strokeStyle=PAL.grat; ctx.lineWidth=.6; ctx.stroke();
@@ -2080,9 +2150,9 @@ function panelLoc(){
 }
 function solarHTML(){
   const gs = C.gearStats(gearForCalc(), bortleFor(S.sel));
-  let h = `<div><h4>Solar observing</h4>`;
+  let h = `<div><h4>Solar observing</h4>` + sunTodayHTML();
   if(!gs.solar){
-    return h + `<div class="alert danger"><div class="h">Safety first</div><p>Never point your telescope, finder or camera at the Sun without a certified full-aperture solar filter. Even a second can permanently damage your eyes. Add a white-light solar filter in Gear to get daytime forecasts for sunspots.</p></div></div>`;
+    return h + `<div class="alert danger" style="margin-top:8px"><div class="h">Safety first</div><p>Never point your telescope, finder or camera at the Sun without a certified full-aperture solar filter. Even a second can permanently damage your eyes. Add a white-light solar filter in Gear to get daytime forecasts for sunspots.</p></div></div>`;
   }
   const days = C.solarDays(S.times, S.sel.lat, S.sel.lon, wxAt);
   h += `<ul class="tlist">${days.map(d=>{
@@ -2368,6 +2438,7 @@ function panelCal(){
   const now = tDate(S.ti), ms = C.marsSeason(now), sr = C.saturnRings(now);
   h += `<div class="gstats">
     <div class="stat"><span class="l">Mars season</span><span class="v" style="font-size:14px">Year ${ms.MY} · Ls ${Math.round(ms.Ls)}°</span><span class="n" style="white-space:normal">${esc(ms.north[0].toUpperCase()+ms.north.slice(1))} north, ${esc(ms.south)} south.${ms.dust?' Dust-storm season.':''}</span></div>
+    ${(()=>{ const se=C.nextVisibleSolarEclipse(new Date(S.times[0]*1000), S.sel.lat, S.sel.lon); return `<div class="stat" style="grid-column:1/-1"><span class="l">Next solar eclipse here</span><span class="v" style="font-size:14px">${se?fmtMD.format(se.date)+', '+se.date.getFullYear():'none within 40 years'}</span><span class="n" style="white-space:normal">${se?`${se.kind==='total'?'Total':se.kind==='annular'?'Annular':'Partial'} from here, ${Math.round(se.obscuration*100)}% covered, Sun ${Math.round(se.altitude)}° up`:''}</span></div>`; })()}
     <div class="stat"><span class="l">Saturn's rings</span><span class="v" style="font-size:14px">${Math.abs(sr.B).toFixed(1)}° ${sr.face} face</span><span class="n" style="white-space:normal">${sr.opening?'Opening':'Closing'}${sr.opening&&sr.face==='south'?'; widest around 2032':''}.</span></div>
   </div><p class="note" style="margin:-8px 0 0">${esc(ms.cap)} Live Martian weather reports aren't available from a free source right now, so Starcast tracks the season and dust-storm risk instead.</p>`;
   h += `<div class="filters">${F.map(([k,l])=>`<button data-cf="${k}" aria-pressed="${S.calFilter===k}">${l}</button>`).join('')}</div>`;
@@ -2521,7 +2592,7 @@ function nearNA(lat, lon, dLat, dLon){
 }
 
 /* --- grid layers --- */
-const COARSE = { id:'coarse3', lat0:24, lon0:-168, dLat:3, dLon:3.5, nLat:17, nLon:34 };
+const COARSE = { id:'coarse4', lat0:24, lon0:-168, dLat:3, dLon:3.5, nLat:21, nLon:34 }; // to 84°N, covering the Arctic islands
 const TILE_DEG = 5, FINE = 0.5;
 function tileSpec(lat, lon){
   const la = Math.floor(lat/TILE_DEG)*TILE_DEG, lo = Math.floor(lon/TILE_DEG)*TILE_DEG;
@@ -2533,7 +2604,7 @@ function specPoints(spec){
   const pts=[], idx=new Int32Array(spec.nLat*spec.nLon).fill(-1);
   for(let i=0;i<spec.nLat;i++) for(let j=0;j<spec.nLon;j++){
     const lat = spec.lat0+i*spec.dLat, lon = spec.lon0+j*spec.dLon;
-    if(lat>72 || !nearNA(lat,lon,spec.dLat,spec.dLon)) continue;
+    if(lat>84 || !nearNA(lat,lon,spec.dLat,spec.dLon)) continue;
     idx[i*spec.nLon+j]=pts.length; pts.push([+lat.toFixed(3), +lon.toFixed(3)]);
   }
   return {pts, idx};
@@ -2649,7 +2720,7 @@ async function loadVisibleTiles(){
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
     const ll=proj.invert([W*j/6, H*i/6]); if(!ll||isNaN(ll[0])||!visiblePt(ll)) continue;
-    if(ll[1]<24||ll[1]>72||ll[0]<-170||ll[0]>-50) continue;
+    if(ll[1]<24||ll[1]>84||ll[0]<-170||ll[0]>-50) continue;
     const sp=tileSpec(ll[1],ll[0]); if(!want.has(sp.id)) want.set(sp.id,{sp,d:d3.geoDistance(ll,c)});
   }
   const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,4).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
@@ -3007,7 +3078,8 @@ function logHTML(){
   h += `<div class="row" style="gap:10px;margin-bottom:8px"><div class="stat" style="flex:1"><span class="l">Messier objects seen</span><span class="v">${seenM.size} / 110</span><span class="n"><span class="mbar"><i style="width:${(seenM.size/110*100).toFixed(1)}%"></i></span></span></div>
     <div class="stat" style="flex:1"><span class="l">Logged sightings</span><span class="v">${S.log.length}</span><span class="n">${S.log.length?`last ${fmtMD.format(new Date(S.log[S.log.length-1].at*1000))}`:'none yet'}</span></div></div>`;
   if(!S.log.length) h += `<p class="note" style="margin:0">Press <b>Seen it</b> in tonight's plan or the red view to log what you observed, with that night's conditions.</p>`;
-  else h += `<ul class="slist">${S.log.slice().reverse().slice(0,10).map(e=>`<li class="sv"><div class="info"><b>${esc(e.name)}</b><span class="sub">${esc(fmtFull.format(new Date(e.at*1000)))} · ${esc(e.loc)}${e.cloud!=null?` · ${e.cloud}% cloud, seeing ${e.seeing}`:''}</span></div><button class="btn ghost" data-logdel="${e.id}" aria-label="Remove from log">✕</button></li>`).join('')}</ul>
+  else h += `<ul class="slist">${S.log.slice().reverse().slice(0,10).map(e=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(e.name)}</b><span class="sub">${esc(fmtFull.format(new Date(e.at*1000)))} · ${esc(e.loc)}${e.cloud!=null?` · ${e.cloud}% cloud, seeing ${e.seeing}`:''}</span>
+      <input type="text" class="lognote" id="ln_${e.id}" data-lognote="${e.id}" value="${esc(e.note||'')}" placeholder="Add a note: what you saw, eyepiece, conditions…" aria-label="Note for ${esc(e.name)}"></div><button class="btn ghost" data-logdel="${e.id}" aria-label="Remove from log">✕</button></li>`).join('')}</ul>
     ${S.log.length>10?`<p class="note">Showing the latest 10 of ${S.log.length}.</p>`:''}`;
   return h + `</div>`;
 }
@@ -3168,6 +3240,7 @@ function wireTelescope(b){
   const so=$('#skyOpen'); if(so) so.onclick=openSky;
   const ro=$('#redOpen'); if(ro) ro.onclick=()=>{ S.redIdx=0; openRed(); };
   b.querySelectorAll('[data-seen]').forEach(x=>x.onclick=()=>{ const p=S.plan[+x.dataset.seen]; addLog(p.x.r,p.i); toast(`Logged ${p.t.name}`); const y=b.scrollTop; renderPanel(); b.scrollTop=y; });
+  b.querySelectorAll('[data-lognote]').forEach(x=>x.onchange=()=>{ const e=S.log.find(l=>l.id===+x.dataset.lognote); if(e){ e.note=x.value.trim().slice(0,500); store.set('log',S.log); toast('Note saved'); } });
   b.querySelectorAll('[data-logdel]').forEach(x=>x.onclick=()=>{ S.log=S.log.filter(e=>e.id!==+x.dataset.logdel); store.set('log',S.log); renderPanel(); });
 }
 
@@ -3175,6 +3248,19 @@ function wireTelescope(b){
 /* Gear tab: instrument profiles (telescope, binoculars, naked eye), eyepiece advisor,
    photography helper (exposures, trailing limits, framing preview), interests. */
 
+// Common eyepiece designs and cameras, so specs don't have to be looked up
+const EP_PRESETS = [
+  ['Plössl (about 52°)', [40,32,25,20,17,15,12.5,10,9,7.5,6.3,4], 52],
+  ['Kellner (about 40°)', [25,20,12,10,9,6], 40],
+  ['Wide-field (68°)', [34,24,20,16,11,8,5], 68],
+  ['Ultra-wide (82°)', [30,24,18,14,11,8.8,6.7,4.7], 82],
+  ['Zoom 8–24 mm (40–60°)', [24,8], 50]
+];
+const CAM_PRESETS = [
+  ['Canon EOS Rebel T3 / 1100D', 22.0, 14.7, 5.2], ['Canon EOS Rebel T3i–T5i / 600D–700D', 22.3, 14.9, 4.3], ['Canon EOS Rebel T6i–T8i / SL3', 22.3, 14.9, 3.72],
+  ['Canon EOS 6D (full frame)', 35.8, 23.9, 6.55], ['Nikon D3200–D3500', 23.2, 15.4, 3.85], ['Nikon D5300–D5600', 23.5, 15.6, 3.89],
+  ['Sony a6000 series', 23.5, 15.6, 3.92], ['ZWO ASI224MC (planetary)', 4.9, 3.7, 3.75], ['ZWO ASI462MC (planetary)', 5.6, 3.2, 2.9], ['ZWO ASI533MC (deep sky)', 11.3, 11.3, 3.76]
+];
 const BINO_DEFAULT = { kind:'binoculars', name:'10×50 binoculars', aperture:50, mag:10, field:6.5 };
 const MOUNTS = [['manual','Manual equatorial (no motor)'],['motor','Equatorial with motor drive'],['tracking','Computerized tracking / GoTo'],['altaz','Alt-azimuth, no tracking']];
 S.frameTarget = store.get('frameTarget','M42');
@@ -3203,7 +3289,8 @@ function panelGear(){
       <div class="stat"><span class="l">Faintest star</span><span class="v">mag ${gs.limMag.toFixed(1)}</span><span class="n">naked eye ${gs.nelm.toFixed(1)} here</span></div>
       <div class="stat"><span class="l">Resolution</span><span class="v">${gs.dawes.toFixed(2)}″</span><span class="n">Dawes limit · f/${gs.ratio.toFixed(1)}</span></div>
       <div class="stat"><span class="l">Light grasp</span><span class="v">${Math.round(gs.lightGrasp)}×</span><span class="n">your dark-adapted eye</span></div></div>`;
-    if(gs.views.length) h += `<table class="views"><thead><tr><th>View</th><th class="r">Power</th><th class="r">Field</th><th class="r">Exit pupil</th></tr></thead><tbody>${gs.views.map(v=>`<tr><td>${esc(v.label)}</td><td class="mono">${Math.round(v.mag)}×</td><td class="mono">${v.tfov.toFixed(2)}°</td><td class="mono">${v.exit.toFixed(1)} mm</td></tr>`).join('')}</tbody></table>`;
+    if(gs.views.length) h += `<table class="views"><thead><tr><th>View</th><th class="r">Power</th><th class="r">Field</th><th class="r">Exit pupil</th></tr></thead><tbody>${gs.views.map(v=>`<tr${v.mag>gs.maxUseful*1.02?' class="dimrow" title="Beyond this telescope’s useful magnification"':''}><td>${esc(v.label)}${v.mag>gs.maxUseful*1.02?' <span class="sub">(too much power)</span>':''}</td><td class="mono">${Math.round(v.mag)}×</td><td class="mono">${v.tfov.toFixed(2)}°</td><td class="mono">${v.exit.toFixed(1)} mm</td></tr>`).join('')}</tbody></table>`;
+    h += gearMathHTML(g, gs);
     const adv = C.eyepieceAdvice(g);
     if(adv.length) h += `<div><h4>Eyepiece advisor</h4><ul class="tlist">${adv.map(a=>`<li class="sv"><div class="info"><b>${a.fl} mm · ${Math.round(a.mag)}×</b><span class="sub" style="white-space:normal">${esc(a.text)}</span></div></li>`).join('')}</ul>
       <p class="note">Ranked by how much each fills the biggest gap in your current range. Your focuser takes 1.25″ eyepieces, which top out around 32 mm for the widest field.</p></div>`;
@@ -3233,12 +3320,14 @@ function gearFormHTML(g){
     <label class="f">Barlow (×)<input type="number" id="g_bar" min="0" step="0.5" value="${g.barlow||0}"></label>
     <label class="f">Mount<select id="g_mount">${MOUNTS.map(([k,l])=>`<option value="${k}" ${k===(g.mount||'manual')?'selected':''}>${l}</option>`).join('')}</select></label>
     <div class="wide"><h4>Eyepieces</h4><div class="eps">${(g.eyepieces||[]).map((e,i)=>`<div class="ep"><label class="f">Focal length (mm)<input type="number" id="ep_fl_${i}" data-ep="${i}" data-k="fl" min="1" step="0.5" value="${e.fl}"></label><label class="f">Apparent field (°)<input type="number" id="ep_af_${i}" data-ep="${i}" data-k="afov" min="20" max="120" step="1" value="${e.afov}"></label><button type="button" class="btn ghost" data-eprm="${i}" aria-label="Remove eyepiece">Remove</button></div>`).join('')}</div>
-      <button type="button" class="btn" id="epAdd" style="margin-top:6px">Add eyepiece</button>
+      <div class="row" style="margin-top:6px"><select id="epPreset" aria-label="Add a common eyepiece"><option value="">Add a common eyepiece…</option>${EP_PRESETS.map(([n,fls,af],gi)=>`<optgroup label="${n}">${fls.map(fl=>`<option value="${fl}|${af}">${fl} mm ${n.replace(/ \(.*/,'')}</option>`).join('')}</optgroup>`).join('')}</select>
+      <button type="button" class="btn" id="epAdd">Add other</button></div>
       <p class="note">Kellner eyepieces like the K20 show about 40–45° of apparent field; Plössls about 50°.</p></div>
     <div class="wide"><h4>Filters</h4><div class="eps">${(g.filters||[]).map((f,i)=>`<div class="ep"><label class="f">Name<input type="text" id="flt_n_${i}" data-flt="${i}" data-k="name" value="${esc(f.name)}" style="width:110px"></label><label class="f">Type<select id="flt_t_${i}" data-flt="${i}" data-k="type">${FILTER_TYPES.map(([k,l])=>`<option value="${k}" ${k===f.type?'selected':''}>${l}</option>`).join('')}</select></label><button type="button" class="btn ghost" data-fltrm="${i}" aria-label="Remove filter">Remove</button></div>`).join('')}</div>
       <button type="button" class="btn" id="fltAdd" style="margin-top:6px">Add filter</button>
       <p class="note">Nebula filters (UHC, OIII, H-beta) make emission nebulae stand out from streetlight glow. A white-light solar filter unlocks solar forecasts.</p></div>
     <div class="wide"><h4>Camera</h4><label class="checks" style="display:flex;gap:7px;margin-bottom:6px"><input type="checkbox" id="g_camon" ${g.cameraOn?'checked':''}> Include camera (T-ring at prime focus)</label>
+      <label class="f" style="margin-bottom:8px">Fill in from a common camera<select id="camPreset"><option value="">Choose a camera…</option>${CAM_PRESETS.map((c,i)=>`<option value="${i}">${esc(c[0])}</option>`).join('')}</select></label>
       <div class="form"><label class="f wide">Camera<input type="text" id="c_name" value="${esc((g.camera||{}).name||'')}"></label>
       <label class="f">Sensor width (mm)<input type="number" id="c_w" step="0.1" value="${(g.camera||{}).w||22.2}"></label>
       <label class="f">Sensor height (mm)<input type="number" id="c_h" step="0.1" value="${(g.camera||{}).h||14.8}"></label>
@@ -3269,21 +3358,86 @@ function photoHTML(g, gs){
     ${framingHTML(g, gs)}</div>`;
   return h;
 }
+// Apparent size of Solar System bodies on a date, in arcminutes
+const AU_KM = 149597870.7;
+function bodySize(id, d){
+  if(id==='Sun'){ const e=C.geoEq('Sun',d); return 2*Math.atan(695700/(e.dist*AU_KM))*180/Math.PI*60; }
+  if(id==='Moon'){ const e=C.topo('Moon',d,S.sel.lat,S.sel.lon); return 2*Math.atan(1737.4/(e.dist*AU_KM))*180/Math.PI*60; }
+  return C.planetState(id,d).diam/60;
+}
+S.frameBarlow = store.get('frameBarlow', false);
+// Saturn drawn to scale: ring system 1.24-2.27 planet radii, tilted; the near half of the ring passes in front
+let satClip=0;
+function saturnSVG(cx, cy, R, B){
+  const tilt=Math.max(0.03, Math.abs(Math.sin(B*Math.PI/180))), id='satc'+(++satClip), north=B>=0;
+  const ring = `<g transform="translate(${cx.toFixed(2)},${cy.toFixed(2)}) scale(1,${tilt.toFixed(3)})"><circle r="${(1.755*R).toFixed(2)}" fill="none" stroke="#d9c27a" stroke-opacity=".9" stroke-width="${(1.03*R).toFixed(2)}"/><circle r="${(1.97*R).toFixed(2)}" fill="none" stroke="#05080f" stroke-opacity=".55" stroke-width="${Math.max(0.15,0.05*R).toFixed(2)}"/></g>`;
+  return `<clipPath id="${id}"><rect x="${(cx-3*R).toFixed(1)}" y="${north?cy.toFixed(2):(cy-3*R).toFixed(2)}" width="${(6*R).toFixed(1)}" height="${(3*R).toFixed(1)}"/></clipPath>
+    ${ring}<ellipse cx="${cx.toFixed(2)}" cy="${cy.toFixed(2)}" rx="${R.toFixed(2)}" ry="${(R*0.9).toFixed(2)}" fill="#e8d58a"/><g clip-path="url(#${id})">${ring}</g>`;
+}
+function gearMathHTML(g, gs){
+  const v=gs.views[0], b=bortleFor(S.sel), f=x=>Math.round(x*10)/10;
+  const ep = (g.eyepieces||[])[0];
+  return `<details class="math"><summary>How these numbers are calculated</summary><dl>
+    <dt>Magnification</dt><dd>Telescope focal length ÷ eyepiece focal length${ep?`: ${g.focal} ÷ ${ep.fl} = ${f(g.focal/ep.fl)}×`:''}. A Barlow multiplies it${+g.barlow>1&&ep?`: ${f(g.focal/ep.fl)} × ${g.barlow} = ${f(g.focal/ep.fl*g.barlow)}×`:''}.</dd>
+    <dt>Highest useful magnification</dt><dd>About 2× per millimetre of aperture: 2 × ${g.aperture} = ${Math.round(gs.maxUseful)}×. Above that the image gets bigger but not sharper, and on most nights the air limits you to 150–200×.</dd>
+    <dt>Field of view</dt><dd>Eyepiece apparent field ÷ magnification${ep&&v?`: ${ep.afov}° ÷ ${f(v.mag)} = ${v.tfov.toFixed(2)}°`:''}. The full Moon is 0.5° across.</dd>
+    <dt>Exit pupil</dt><dd>Aperture ÷ magnification${v?`: ${g.aperture} ÷ ${f(v.mag)} = ${v.exit.toFixed(1)} mm`:''}. Around 2–5 mm suits most objects; much below 0.7 mm the view turns dim and soft.</dd>
+    <dt>Faintest star</dt><dd>Your naked-eye limit for the sky darkness (Bortle ${b}: magnitude ${gs.nelm.toFixed(1)}) plus 5 × log₁₀(aperture ÷ 7 mm): ${gs.nelm.toFixed(1)} + 5 × log₁₀(${g.aperture} ÷ 7) = ${gs.limMag.toFixed(1)}. 7 mm is the pupil of a dark-adapted eye. Real limits vary about ±0.5 with eyesight, experience and transparency.</dd>
+    <dt>Light grasp</dt><dd>(Aperture ÷ 7 mm)²: (${g.aperture} ÷ 7)² = ${Math.round(gs.lightGrasp)}×, how much more light than your eye collects.</dd>
+    <dt>Resolution (Dawes limit)</dt><dd>116 ÷ aperture in mm: 116 ÷ ${g.aperture} = ${gs.dawes.toFixed(2)}″, the closest double star the telescope can split in perfect air.</dd>
+    <dt>Focal ratio</dt><dd>Focal length ÷ aperture: ${g.focal} ÷ ${g.aperture} = f/${gs.ratio.toFixed(1)}. Lower numbers give wider, brighter photographs.</dd>
+    ${gs.cam?`<dt>Camera field and image scale</dt><dd>Field = 2 × atan(sensor size ÷ 2 ÷ focal length), so ${g.camera.w} mm across at ${g.focal} mm gives ${gs.cam.fovW.toFixed(2)}°. Image scale = 206.265 × pixel size (µm) ÷ focal length (mm) = ${gs.cam.scale?gs.cam.scale.toFixed(2):'?'}″ per pixel.</dd>`:''}
+    <dt>What’s “worth seeing”</dt><dd>Each target is checked against your faintest-star limit (dimmed for large, faint galaxies and nebulae, and helped by a nebula filter), then scored hour by hour for height above the horizon, darkness, moonlight, clouds, and seeing (for planets and double stars) or transparency (for deep-sky objects).</dd>
+  </dl></details>`;
+}
 function framingHTML(g, gs){
-  const opts = [{id:'Moon',name:'Moon',size:31}].concat(C.DSO.filter(d=>d.photo).map(d=>({id:d.id,name:d.name,size:d.size})));
-  const t = opts.find(o=>o.id===S.frameTarget) || opts[0];
-  const fw=gs.cam.fovW*60, fh=gs.cam.fovH*60, scale = 200/Math.max(fw, t.size*1.15, 32);
-  const W2=280, H2=Math.max(150, fh*scale+40), cx=W2/2, cy=H2/2;
+  const d=tDate(S.ti);
+  const solar=['Sun','Moon','Mercury','Venus','Mars','Jupiter','Saturn','Uranus','Neptune'].map(id=>({id, name:id, size:bodySize(id,d), body:true}));
+  const deep=C.DSO.filter(x=>x.photo).map(x=>({id:x.id,name:x.name,size:x.size}));
+  const all=solar.concat(deep);
+  const t = all.find(o=>o.id===S.frameTarget) || all.find(o=>o.id==='Moon');
+  const useB = S.frameBarlow && +g.barlow>1, F = g.focal*(useB?g.barlow:1);
+  const cam=g.camera||{}, fwDeg=2*Math.atan(cam.w/2/F)*180/Math.PI, fhDeg=2*Math.atan(cam.h/2/F)*180/Math.PI;
+  const fw=fwDeg*60, fh=fhDeg*60, pxScale=cam.px?206.265*cam.px/F:null; // arcsec per pixel
+  const widthPx = cam.px ? Math.round(cam.w*1000/cam.px) : null, heightPx = cam.px ? Math.round(cam.h*1000/cam.px) : null;
+  // drawing scale: fit the larger of frame and target
+  const scale = 230/Math.max(fw, t.size*(t.id==='Saturn'?2.3:1)*1.15);
+  const W2=280, H2=Math.max(150, Math.min(260, fh*scale+40)), cx=W2/2, cy=H2/2;
   const rw=fw*scale, rh=fh*scale, ts=t.size*scale;
-  const verdict = t.size > fw*1.05 ? 'Too big for one frame: shoot a mosaic, or use a camera lens instead.' : t.size < fw/8 ? 'Small in the frame: crop afterwards, or add the Barlow for planets and small nebulae.' : 'Frames nicely.';
+  const diskPx = pxScale ? t.size*60/pxScale : null;
+  let shape;
+  if(t.id==='Saturn') shape = saturnSVG(cx, cy, Math.max(0.5,ts/2), C.saturnRings(d).B);
+  else if(t.body){ const col={Sun:'#ffcf6b',Moon:'#d9dde6',Mercury:'#c9bba8',Venus:'#fff1c4',Mars:'#ff8a5c',Jupiter:'#f3cf9b',Uranus:'#9fe0e0',Neptune:'#8fb0ff'}[t.id];
+    shape = `<circle cx="${cx}" cy="${cy}" r="${Math.max(0.6,ts/2).toFixed(2)}" fill="${col}"/>`; }
+  else shape = `<ellipse cx="${cx}" cy="${cy}" rx="${(ts/2).toFixed(1)}" ry="${(ts/2*0.6).toFixed(1)}" fill="var(--accent)" fill-opacity=".22" stroke="var(--accent)"/>`;
+  let verdict;
+  const span = t.size*(t.id==='Saturn'?2.26:1);
+  if(span > fw*1.02 || t.size > fh*1.02) verdict = t.body ? `Larger than the frame${useB?' with the Barlow; try without it':''}.` : 'Too big for one frame: shoot a mosaic, or use a camera lens instead.';
+  else if(t.body && t.id!=='Sun' && t.id!=='Moon') verdict = `${t.name} will be about ${Math.round(diskPx)} pixels across${t.id==='Saturn'?` (${Math.round(diskPx*2.26)} including the rings)`:''} in a ${widthPx}×${heightPx} image.${useB?'':' Add the Barlow for a bigger image.'} Planets are best captured as video and stacked.`;
+  else if(span < fw/8) verdict = 'Small in the frame: crop afterwards, or add the Barlow.';
+  else verdict = `Frames nicely: ${Math.round(span/fw*100)}% of the frame width.`;
+  // close-up of the sensor's pixels for small planets
+  let inset='';
+  if(t.body && diskPx!=null && diskPx < 60 && !['Sun','Moon'].includes(t.id)){
+    const box=Math.max(24, Math.ceil(diskPx*(t.id==='Saturn'?2.6:1.8))), k=120/box, r=diskPx/2*k;
+    inset = `<svg viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Close-up of the planet on the camera's pixels" style="background:#05080f;border:1px solid var(--line);border-radius:6px">
+      ${box<=40?Array.from({length:box+1},(_,i)=>`<line x1="${(i*k).toFixed(1)}" y1="0" x2="${(i*k).toFixed(1)}" y2="120" stroke="#1c2840" stroke-width=".5"/><line x1="0" y1="${(i*k).toFixed(1)}" x2="120" y2="${(i*k).toFixed(1)}" stroke="#1c2840" stroke-width=".5"/>`).join(''):''}
+      ${t.id==='Saturn' ? saturnSVG(60,60,r,C.saturnRings(d).B) : `<circle cx="60" cy="60" r="${r.toFixed(1)}" fill="${{Mercury:'#c9bba8',Venus:'#fff1c4',Mars:'#ff8a5c',Jupiter:'#f3cf9b',Uranus:'#9fe0e0',Neptune:'#8fb0ff'}[t.id]}"/>`}
+    </svg><p class="note" style="margin:2px 0 0">Close-up: ${box} × ${box} pixels of your sensor${box<=40?', grid lines are single pixels':''}.</p>`;
+  }
+  const sizeTxt = t.size>=60 ? (t.size/60).toFixed(2)+'°' : t.size>=1 ? t.size.toFixed(1)+'′' : (t.size*60).toFixed(1)+'″';
   return `<div style="margin-top:10px"><h4>Framing preview</h4>
-    <label class="f" style="margin-bottom:6px">Target<select id="frameT">${opts.map(o=>`<option value="${esc(o.id)}" ${o.id===t.id?'selected':''}>${esc(o.name)}</option>`).join('')}</select></label>
+    <div class="row" style="margin-bottom:6px;align-items:flex-end"><label class="f" style="flex:1;min-width:160px">Target<select id="frameT">
+      <optgroup label="Sun, Moon and planets">${solar.map(o=>`<option value="${o.id}" ${o.id===t.id?'selected':''}>${o.name}</option>`).join('')}</optgroup>
+      <optgroup label="Deep sky">${deep.map(o=>`<option value="${esc(o.id)}" ${o.id===t.id?'selected':''}>${esc(o.name)}</option>`).join('')}</optgroup></select></label>
+      ${+g.barlow>1?`<label class="checks" style="display:flex;gap:6px;padding-bottom:6px"><input type="checkbox" id="frameB" ${useB?'checked':''}> With ${g.barlow}× Barlow</label>`:''}</div>
+    ${t.id==='Sun'?`<div class="alert danger" style="margin-bottom:6px"><div class="h">Solar filter required</div><p>Photograph the Sun only with a certified full-aperture solar filter on the front of the telescope, and cap the finder.</p></div>`:''}
+    <div class="row" style="align-items:flex-start;gap:10px">
     <svg viewBox="0 0 ${W2} ${H2.toFixed(0)}" width="100%" style="max-width:${W2}px;background:var(--bg);border:1px solid var(--line);border-radius:6px" role="img" aria-label="Camera frame compared with the target's size">
-      <ellipse cx="${cx}" cy="${cy}" rx="${(ts/2).toFixed(1)}" ry="${(ts/2*(t.id==='Moon'?1:0.6)).toFixed(1)}" fill="var(--accent)" fill-opacity=".22" stroke="var(--accent)"/>
+      ${shape}
       <rect x="${(cx-rw/2).toFixed(1)}" y="${(cy-rh/2).toFixed(1)}" width="${rw.toFixed(1)}" height="${rh.toFixed(1)}" fill="none" stroke="var(--fg)" stroke-width="1.5"/>
-      <circle cx="${(W2-22).toFixed(0)}" cy="22" r="${(31*scale/2).toFixed(1)}" fill="none" stroke="var(--muted)" stroke-dasharray="2 2"/>
-      <text x="${W2-22}" y="${(22+31*scale/2+11).toFixed(0)}" text-anchor="middle" font-size="9" fill="var(--muted)">Moon</text>
-    </svg><p class="note" style="margin:4px 0 0">White box: camera frame at prime focus (${gs.cam.fovW.toFixed(2)}° × ${gs.cam.fovH.toFixed(2)}°). ${esc(verdict)}</p></div>`;
+    </svg>${inset?`<div>${inset}</div>`:''}</div>
+    <p class="note" style="margin:4px 0 0">${esc(t.name)} is ${sizeTxt} across${t.body?` on ${fmtMD.format(d)}`:''}. White box: camera frame at ${useB?`${g.barlow}× Barlow (${Math.round(F)} mm, f/${(F/g.aperture).toFixed(0)})`:`prime focus (${g.focal} mm)`}, ${fwDeg>=1?fwDeg.toFixed(2)+'°':(fw).toFixed(1)+'′'} × ${fhDeg>=1?fhDeg.toFixed(2)+'°':(fh).toFixed(1)+'′'}${pxScale?`, ${pxScale.toFixed(2)}″ per pixel`:''}. ${esc(verdict)}</p></div>`;
 }
 
 function wireGear(b){
@@ -3312,6 +3466,8 @@ function wireGear(b){
     });
     const rerender=()=>{ saveGear(); const y=b.scrollTop; renderPanel(); b.scrollTop=y; };
     const ea=$('#epAdd'); if(ea) ea.onclick=()=>{ activeGear().eyepieces.push({fl:10,afov:50}); rerender(); };
+    const ep=$('#epPreset'); if(ep) ep.onchange=e=>{ e.stopPropagation(); if(!ep.value) return; const [fl,af]=ep.value.split('|').map(Number); activeGear().eyepieces.push({fl,afov:af}); rerender(); toast(`Added ${fl} mm eyepiece`); };
+    const cp=$('#camPreset'); if(cp) cp.onchange=e=>{ e.stopPropagation(); const c=CAM_PRESETS[+cp.value]; if(!c) return; const g=activeGear(); g.camera={name:c[0], w:c[1], h:c[2], px:c[3]}; g.cameraOn=true; rerender(); toast(`Camera set to ${c[0]}`); };
     const fa=$('#fltAdd'); if(fa) fa.onclick=()=>{ activeGear().filters=(activeGear().filters||[]); activeGear().filters.push({name:'New filter',type:'lp'}); rerender(); };
     gf.querySelectorAll('[data-fltrm]').forEach(x=>x.onclick=()=>{ activeGear().filters.splice(+x.dataset.fltrm,1); rerender(); });
     gf.querySelectorAll('[data-eprm]').forEach(x=>x.onclick=()=>{ activeGear().eyepieces.splice(+x.dataset.eprm,1); rerender(); });
@@ -3319,6 +3475,7 @@ function wireGear(b){
   const itf=$('#intForm'); if(itf) itf.addEventListener('change',()=>{ itf.querySelectorAll('[data-int]').forEach(c=>S.interests[c.dataset.int]=c.checked); store.set('interests',S.interests); S.eval=null; });
   const gr=$('#gearReset'); if(gr) gr.onclick=()=>{ const id=activeGear().id; S.gears[S.gearIdx]=Object.assign({id,kind:'telescope',mount:'manual'}, JSON.parse(JSON.stringify(DEFAULT_GEAR))); saveGear(); renderPanel(); toast('Gear reset'); };
   const iso=$('#photoIso'); if(iso) iso.onchange=()=>{ S.photoIso=+iso.value; store.set('photoIso',S.photoIso); const y=b.scrollTop; renderPanel(); b.scrollTop=y; };
+  const fb=$('#frameB'); if(fb) fb.onchange=()=>{ S.frameBarlow=fb.checked; store.set('frameBarlow',S.frameBarlow); const y=b.scrollTop; renderPanel(); b.scrollTop=y; };
   const ft=$('#frameT'); if(ft) ft.onchange=()=>{ S.frameTarget=ft.value; store.set('frameTarget',S.frameTarget); const y=b.scrollTop; renderPanel(); b.scrollTop=y; };
 }
 
@@ -3340,15 +3497,16 @@ function jupiterHTML(n){
   const W2=300, H2=90, cx=W2/2, cy=H2/2, sc=4.2;
   const moons=Object.entries(jm).map(([k,m])=>({k, name:k[0].toUpperCase()+k.slice(1), x:cx + flip*(-m.x)*sc, y:cy + flip*(-m.y)*sc, m}));
   const evs = C.jupiterEvents(tDate(n.start), tDate(n.end-1)).filter(e=>e.end==null || e.end>tDate(n.start));
-  const evText = e => `${e.moon} ${e.kind==='transit'?'crosses in front of Jupiter':'is hidden behind Jupiter'} ${e.start<tDate(n.start)?'until':'from '+hourLabel(e.start)}${e.end?` ${e.start<tDate(n.start)?'':'to '}${hourLabel(e.end)}`:''}`;
+  const evText = e => `${e.kind==='shadow'?e.moon+'’s shadow crosses Jupiter':e.moon+(e.kind==='transit'?' crosses in front of Jupiter':' is hidden behind Jupiter')} ${e.start<tDate(n.start)?'until':'from '+hourLabel(e.start)}${e.end?` ${e.start<tDate(n.start)?'':'to '}${hourLabel(e.end)}`:''}`;
   return `<div><div class="row" style="justify-content:space-between;margin-bottom:6px"><h4 style="margin:0">Jupiter's moons · ${hourLabel(d)}</h4>
       <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="jupFlip" ${S.jupFlip?'checked':''}> As in your reflector</label></div>
     <svg viewBox="0 0 ${W2} ${H2}" width="100%" style="max-width:${W2*1.4}px;background:#04060c;border-radius:6px;display:block" role="img" aria-label="Positions of Jupiter's four large moons">
       <ellipse cx="${cx}" cy="${cy}" rx="${sc}" ry="${(sc*0.935).toFixed(2)}" fill="#e9cf9f"/>
+      ${moons.filter(o=>o.m.shadow).map(o=>`<circle cx="${(cx + flip*(-o.m.shadow.x)*sc).toFixed(2)}" cy="${(cy + flip*(-o.m.shadow.y)*sc).toFixed(2)}" r="0.9" fill="#000"/>`).join('')}
       ${moons.map(o=>{ if(Math.abs(o.x-cx)>W2/2-6) return `<text x="${o.x<cx?6:W2-6}" y="${cy+3}" text-anchor="${o.x<cx?'start':'end'}" font-size="9" fill="#9aa6bd">${o.name} ${o.x<cx?'◂':'▸'}</text>`;
         return `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="1.8" fill="${o.m.hidden?'#555':'#f4f6fb'}"/><text x="${o.x.toFixed(1)}" y="${(o.y + (o.k==='io'||o.k==='ganymede'?-6:12)).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#9aa6bd">${o.name}${o.m.transit?' (on disk)':o.m.hidden?' (behind)':''}</text>`; }).join('')}
     </svg>
-    <p class="note" style="margin:4px 0 0">${S.jupFlip?'Rotated 180°, the way your Newtonian shows it. ':'North up, east left, as with the naked eye or binoculars. '}${evs.length?esc(evs.map(evText).join('. '))+'.':'No moon crosses in front of Jupiter during darkness tonight.'}</p></div>`;
+    <p class="note" style="margin:4px 0 0">${S.jupFlip?'Rotated 180°, the way your Newtonian shows it. ':'North up, east left, as with the naked eye or binoculars. '}${evs.length?esc(evs.map(evText).join('. '))+'.':'No moon or moon shadow crosses Jupiter during darkness tonight.'}</p></div>`;
 }
 
 /* --- Moon on the terminator --- */
@@ -3364,6 +3522,22 @@ function moonFeaturesHTML(n){
 }
 
 /* --- satellite passes (ISS, Tiangong) via CelesTrak orbital elements --- */
+/* --- the Sun today: latest image from NASA's Solar Dynamics Observatory and NOAA flare data --- */
+S.sunNow = { flare:null, loaded:false };
+async function loadSunNow(){
+  if(S.sunNow.loaded) return; S.sunNow.loaded=true;
+  try{ const j=await getJSON('https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json');
+    const f=Array.isArray(j)?j[j.length-1]:j; if(f && (f.max_class||f.current_class)) S.sunNow.flare={ cls:f.max_class||f.current_class, at:Date.parse(f.max_time||f.begin_time||f.time_tag) };
+  }catch(e){}
+  if(S.tab==='loc'){ const b=$('#pbody'), y=b.scrollTop; renderPanel(); b.scrollTop=y; }
+}
+function sunTodayHTML(){
+  setTimeout(loadSunNow, 50);
+  const f=S.sunNow.flare, big = f && /^[MX]/.test(f.cls);
+  return `<div class="sunnow"><img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_HMIIF.jpg" alt="The Sun today, seen in visible light by NASA's Solar Dynamics Observatory" width="104" height="104" loading="lazy" onerror="this.remove()">
+    <div style="min-width:0"><b>The Sun today</b><p class="note" style="margin:2px 0 0">Visible-light view from NASA’s Solar Dynamics Observatory. Dark spots here are what a white-light solar filter shows.${f?` Latest flare: <b>${esc(f.cls)}</b>${isFinite(f.at)?` at ${fmtTime.format(new Date(f.at))}`:''}${big?'. Strong flares can trigger aurora 1–3 days later.':'.'}`:''}</p></div></div>`;
+}
+
 const SATS = [[25544,'International Space Station'],[48274,'Tiangong space station']];
 S.sat = { tle:null, passes:null, err:null, busy:false, key:'' };
 async function loadTLE(){
@@ -3555,7 +3729,7 @@ function wireInstall(){ const b=$('#installBtn'); if(b) b.onclick=async()=>{ if(
 const SUPABASE_URL = '';
 const SUPABASE_ANON_KEY = '';
 
-const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity'];
+const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity','frameBarlow'];
 const LIST_IDS = { saved:'cid', gears:'id', log:'id', checks:'id' };
 const ACC = { on: !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase!=='undefined' && /^https?:$/.test(location.protocol)),
   client:null, user:null, status:'', dirty:new Set(), timer:null, ready:false, menu:false, confirmDelete:false };

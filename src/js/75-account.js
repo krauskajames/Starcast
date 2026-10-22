@@ -11,7 +11,7 @@
 const SUPABASE_URL = '';
 const SUPABASE_ANON_KEY = '';
 
-const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity'];
+const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity','frameBarlow'];
 const LIST_IDS = { saved:'cid', gears:'id', log:'id', checks:'id' };
 const ACC = { on: !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase!=='undefined' && /^https?:$/.test(location.protocol)),
   client:null, user:null, status:'', dirty:new Set(), timer:null, ready:false, menu:false, confirmDelete:false };

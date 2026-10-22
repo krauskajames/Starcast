@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 20, 2026 · Current version: v3.1
+Last updated: October 22, 2026 · Current version: v3.3
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -31,7 +31,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 | City labels that scale with zoom; dark-sky parks and observatories marked | ✅ | v3.0 |
 | Base maps: simple, OpenStreetMap, topographic, satellite, dark streets, NASA night lights | ✅ | v3.1 |
 | "None" weather layer, to read the base map clearly | ✅ | v3.1 |
-| Weather opacity slider | 💡 | |
+| Weather opacity slider | ✅ | v3.3; in the layer legend |
 | More detailed Canadian coastline | 💡 | Currently a simplified outline |
 | Weather layers for the rest of the world | 💡 | |
 | Wind-particle animation like nullschool (jet stream) | 💡 | |
@@ -80,7 +80,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 | Driving times and park opening hours for "Where to go" | ✅ | v3.0; OSRM routing, OpenStreetMap hours where listed |
 | "Where to go" lists only real named places: state and county parks, forests, natural areas, campgrounds, dark-sky parks | ✅ | v3.1; backup OpenStreetMap servers when the main one is busy |
 | Solar observing days (with a solar filter only) | ✅ | |
-| Sunspot and solar flare activity | 💡 | For solar observing and aurora |
+| Sunspot and solar flare activity | ✅ | v3.3; today's Sun from NASA SDO and NOAA's latest X-ray flare, in Solar observing |
 
 ## 6. At the telescope
 
@@ -90,7 +90,8 @@ Last updated: October 20, 2026 · Current version: v3.1
 | Red "at the eyepiece" view: large red text, one target at a time, keeps the screen awake | ✅ | v3.0 |
 | All-sky chart for your location and hour, with tonight's targets, planets and your horizon | ✅ | v3.0; 1,600 stars, all 88 constellations |
 | Observing log with conditions, and Messier checklist progress | ✅ | v3.0 |
-| Sketches and photos in the log | 💡 | |
+| Notes on log entries | ✅ | v3.3 |
+| Sketches and photos in the log | 💡 | Needs file storage (Supabase Storage once accounts are on) |
 | Star-hopping guides to faint targets | 💡 | |
 
 ## 7. What's worth seeing
@@ -103,8 +104,10 @@ Last updated: October 20, 2026 · Current version: v3.1
 | Mars seasons, Saturn ring tilt | ✅ | |
 | Moon features along the terminator tonight | ✅ | v3.0; 26 well-known features |
 | Jupiter's moons diagram (binocular or reflector orientation) and moons crossing or hidden by Jupiter | ✅ | v3.0 |
-| Jupiter: Great Red Spot transit times, and moon shadows on Jupiter | 💡 | |
-| Best NGC and Caldwell objects beyond Messier | 💡 | |
+| Jupiter: moon shadows crossing the planet | ✅ | v3.3; in the diagram and the tonight text |
+| Jupiter: Great Red Spot transit times | 💡 | Needs the Red Spot's current longitude, which drifts |
+| 31 showpieces beyond Messier (Veil, Helix, Cat's Eye, Double Cluster, Rosette, Sculptor Galaxy…) | ✅ | v3.3; 146 targets in all |
+| Fuller NGC and Caldwell catalog | 💡 | |
 | Live Martian weather | 💡 | No reliable free source right now |
 
 ## 8. Gear
@@ -117,7 +120,9 @@ Last updated: October 20, 2026 · Current version: v3.1
 | Eyepiece advisor: which eyepiece would fill gaps in your range | ✅ | v3.0 |
 | Photography: starting exposures for the Moon and planets at prime focus, trailing limits, camera-lens table | ✅ | v3.0 |
 | Framing preview: how a target fits the camera frame | ✅ | v3.0 |
-| Eyepiece and lens catalogs to pick from | 💡 | |
+| Eyepiece and camera pick-lists | ✅ | v3.3; common eyepiece designs and 10 cameras |
+| Explanation of how gear numbers are calculated | ✅ | v3.3; worked examples with your own numbers |
+| Framing preview for the Sun, Moon and planets at today's size, with or without the Barlow, with a pixel close-up | ✅ | v3.3 |
 
 ## 9. Calendar
 
@@ -127,7 +132,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 | Planet status card (Mars season, Saturn's rings) | ✅ | |
 | Lunar occultations of planets, bright stars and the Pleiades, as seen from your spot | ✅ | v3.0 |
 | ISS and Tiangong passes (next 3 nights, Forecast tab) | ✅ | v3.0; CelesTrak orbits |
-| Solar eclipses | 💡 | |
+| Solar eclipses as seen from your location (calendar, plus the next one worth seeing) | ✅ | v3.3 |
 | Starlink trains and other bright satellites | 💡 | |
 | Comets | 💡 | Needs periodic orbit data |
 
@@ -166,6 +171,7 @@ Last updated: October 20, 2026 · Current version: v3.1
 
 ## Version history
 
+- **v3.3 (Oct 22, 2026):** Aurora drawn above the weather layer; weather covers the Arctic islands to 84°N; weather opacity slider. Framing preview gains the Sun, Moon and planets at their real size today, a Barlow option and a pixel close-up; Gear explains how every number is calculated. Eyepiece and camera pick-lists, notes on log entries, 31 more deep-sky showpieces, Jupiter moon shadows, solar eclipses from your location, and "The Sun today".
 - **v3.2 (Oct 22, 2026):** Accounts (Google sign-in through Supabase) with cross-device sync and PostGIS saved locations, ready to switch on. Multi-hue colour scales for cloud cover, observing (viridis), seeing and transparency (red to deep blue), dew risk and wind, so middle values read clearly. Detailed weather patches shown only when zoomed in to a region, with wider blended edges.
 - **v3.1.4 (Oct 21, 2026):** Fixed twinkling holes in the Observing layer under overcast skies (a rounding overshoot past 100% cloud produced invalid values).
 - **v3.1.3 (Oct 21, 2026):** Smoother weather map: finer continental grid (3° × 3.5°), smooth interpolation between points, detailed patches used only when zoomed in and blended in at their edges, so no more blobs or a hard-edged square around your spot.

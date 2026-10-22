@@ -26,7 +26,8 @@ function logHTML(){
   h += `<div class="row" style="gap:10px;margin-bottom:8px"><div class="stat" style="flex:1"><span class="l">Messier objects seen</span><span class="v">${seenM.size} / 110</span><span class="n"><span class="mbar"><i style="width:${(seenM.size/110*100).toFixed(1)}%"></i></span></span></div>
     <div class="stat" style="flex:1"><span class="l">Logged sightings</span><span class="v">${S.log.length}</span><span class="n">${S.log.length?`last ${fmtMD.format(new Date(S.log[S.log.length-1].at*1000))}`:'none yet'}</span></div></div>`;
   if(!S.log.length) h += `<p class="note" style="margin:0">Press <b>Seen it</b> in tonight's plan or the red view to log what you observed, with that night's conditions.</p>`;
-  else h += `<ul class="slist">${S.log.slice().reverse().slice(0,10).map(e=>`<li class="sv"><div class="info"><b>${esc(e.name)}</b><span class="sub">${esc(fmtFull.format(new Date(e.at*1000)))} · ${esc(e.loc)}${e.cloud!=null?` · ${e.cloud}% cloud, seeing ${e.seeing}`:''}</span></div><button class="btn ghost" data-logdel="${e.id}" aria-label="Remove from log">✕</button></li>`).join('')}</ul>
+  else h += `<ul class="slist">${S.log.slice().reverse().slice(0,10).map(e=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(e.name)}</b><span class="sub">${esc(fmtFull.format(new Date(e.at*1000)))} · ${esc(e.loc)}${e.cloud!=null?` · ${e.cloud}% cloud, seeing ${e.seeing}`:''}</span>
+      <input type="text" class="lognote" id="ln_${e.id}" data-lognote="${e.id}" value="${esc(e.note||'')}" placeholder="Add a note: what you saw, eyepiece, conditions…" aria-label="Note for ${esc(e.name)}"></div><button class="btn ghost" data-logdel="${e.id}" aria-label="Remove from log">✕</button></li>`).join('')}</ul>
     ${S.log.length>10?`<p class="note">Showing the latest 10 of ${S.log.length}.</p>`:''}`;
   return h + `</div>`;
 }
@@ -187,5 +188,6 @@ function wireTelescope(b){
   const so=$('#skyOpen'); if(so) so.onclick=openSky;
   const ro=$('#redOpen'); if(ro) ro.onclick=()=>{ S.redIdx=0; openRed(); };
   b.querySelectorAll('[data-seen]').forEach(x=>x.onclick=()=>{ const p=S.plan[+x.dataset.seen]; addLog(p.x.r,p.i); toast(`Logged ${p.t.name}`); const y=b.scrollTop; renderPanel(); b.scrollTop=y; });
+  b.querySelectorAll('[data-lognote]').forEach(x=>x.onchange=()=>{ const e=S.log.find(l=>l.id===+x.dataset.lognote); if(e){ e.note=x.value.trim().slice(0,500); store.set('log',S.log); toast('Note saved'); } });
   b.querySelectorAll('[data-logdel]').forEach(x=>x.onclick=()=>{ S.log=S.log.filter(e=>e.id!==+x.dataset.logdel); store.set('log',S.log); renderPanel(); });
 }

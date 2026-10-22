@@ -208,6 +208,10 @@
     MESSIER.forEach(r => { if (have.has(r[0])) return;
       DSO.push({ id: r[0], name: r[1] ? `${r[1]} (${r[0]})` : `${r[0]} (${short[r[6]] || r[6]})`, ra: r[2], dec: r[3], mag: r[4], size: r[5], kind: r[6], lowSB: !!r[7], photo: !!r[8], messier: true }); });
     DSO.forEach(d => { if (/^M\d+$/.test(d.id)) d.messier = true; }); }
+  // Showpieces beyond Messier (positions from the d3-celestial catalog; visual magnitudes)
+  const NGC_EXTRA = [["NGC 253","Sculptor Galaxy",0.793,-25.29,7.6,27.5,"galaxy",0,1],["NGC 7293","Helix Nebula",22.494,-20.84,7.6,25,"nebula",1,1],["NGC 457","Owl Cluster",1.326,58.29,6.4,20,"cluster",0,0],["NGC 6826","Blinking Planetary",19.747,50.53,8.8,0.5,"nebula",0,0],["NGC 6543","Cat's Eye Nebula",17.976,66.63,8.1,0.4,"nebula",0,0],["NGC 7662","Blue Snowball",23.432,42.53,8.3,0.6,"nebula",0,0],["NGC 2392","Eskimo Nebula",7.486,20.91,9.1,0.8,"nebula",0,0],["NGC 6992","Eastern Veil Nebula",20.939,31.74,7,60,"nebula",1,1],["NGC 6960","Western Veil (Witch's Broom)",20.761,30.71,7,60,"nebula",1,1],["NGC 891","Edge-on galaxy NGC 891",2.376,42.35,10.1,13.5,"galaxy",1,1],["NGC 4631","Whale Galaxy",12.702,32.54,9.2,9.3,"galaxy",0,1],["NGC 3242","Ghost of Jupiter",10.413,-18.64,8.6,0.6,"nebula",0,0],["NGC 7009","Saturn Nebula",21.07,-11.36,8,0.7,"nebula",0,0],["NGC 752","Open cluster NGC 752",1.961,37.78,5.7,75,"cluster",0,0],["NGC 7789","Caroline's Rose",23.957,56.71,6.7,30,"cluster",0,1],["NGC 2244","Rosette Nebula and cluster",6.532,4.94,4.8,80,"nebula",1,1],["NGC 2403","Galaxy NGC 2403",7.614,65.6,8.9,22,"galaxy",0,1],["NGC 6946","Fireworks Galaxy",20.581,60.15,9.6,11.5,"galaxy",1,1],["NGC 3628","Hamburger Galaxy",11.338,13.59,9.5,10.6,"galaxy",0,1],["NGC 663","Open cluster NGC 663",1.769,61.23,7.1,15,"cluster",0,0],["NGC 6633","Open cluster NGC 6633",18.459,6.57,4.6,20,"cluster",0,0],["NGC 2903","Galaxy NGC 2903",9.536,21.5,9,6.1,"galaxy",0,0],["NGC 7331","Galaxy NGC 7331",22.618,34.42,9.5,10.5,"galaxy",0,1],["NGC 2264","Christmas Tree Cluster",6.683,9.89,3.9,20,"cluster",0,1],["NGC 7635","Bubble Nebula",23.347,61.2,10,15,"nebula",1,1],["NGC 6888","Crescent Nebula",20.202,38.35,7.4,20,"nebula",1,1],["NGC 281","Pacman Nebula",0.874,56.56,7.4,35,"nebula",1,1],["NGC 2841","Galaxy NGC 2841",9.367,50.98,9.2,6.3,"galaxy",0,0],["NGC 6572","Planetary nebula NGC 6572",18.202,6.85,8.1,0.3,"nebula",0,0],["NGC 7027","Planetary nebula NGC 7027",21.117,42.24,8.5,0.3,"nebula",0,0],["NGC 5139","Omega Centauri",13.446,-47.48,3.9,55,"globular",0,1]];
+  { const have = new Set(DSO.map(d => d.id));
+    NGC_EXTRA.forEach(r => { if (!have.has(r[0])) DSO.push({ id: r[0], name: r[1].includes(r[0]) ? r[1] : `${r[1]} (${r[0]})`, ra: r[2], dec: r[3], mag: r[4], size: r[5], kind: r[6], lowSB: !!r[7], photo: !!r[8] }); }); }
   const KIND_LABEL = { galaxy: 'Galaxy', cluster: 'Star cluster', nebula: 'Nebula', globular: 'Globular cluster', double: 'Double star', milkyway: 'Milky Way', planet: 'Planet', moon: 'Moon' };
 
   // Can this target be seen with naked eye / the scope at this site?
@@ -646,11 +650,24 @@
     let e = [-u[1], u[0], 0]; const el = Math.hypot(e[0], e[1]); e = [e[0] / el, e[1] / el, 0];
     const n = [u[1] * e[2] - u[2] * e[1], u[2] * e[0] - u[0] * e[2], u[0] * e[1] - u[1] * e[0]];
     const out = {};
+    // direction from Jupiter toward the Sun, for moon shadows on the cloud tops
+    const hv = A.HelioVector('Jupiter', new Date(date.getTime() - lt * 1000)), hl = Math.hypot(hv.x, hv.y, hv.z), sd = [-hv.x / hl, -hv.y / hl, -hv.z / hl];
+    const proj = w => [(w[0] * e[0] + w[1] * e[1] + w[2] * e[2]) / RJ_AU, (w[0] * n[0] + w[1] * n[1] + w[2] * n[2]) / RJ_AU, (w[0] * u[0] + w[1] * u[1] + w[2] * u[2]) / RJ_AU];
     for (const k of ['io', 'europa', 'ganymede', 'callisto']) {
       const m = jm[k], v = [m.x, m.y, m.z];
+      // shadow: the moon is between the Sun and Jupiter and its shadow line hits the disk
+      const along = v[0] * sd[0] + v[1] * sd[1] + v[2] * sd[2];
+      const perp = [v[0] - along * sd[0], v[1] - along * sd[1], v[2] - along * sd[2]];
+      const perpR = Math.hypot(perp[0], perp[1], perp[2]) / RJ_AU;
+      let shadow = null;
+      if (along > 0 && perpR < 0.97) {
+        const depth = Math.sqrt(1 - perpR * perpR) * RJ_AU; // where the shadow line meets the surface
+        const hit = [perp[0] + sd[0] * depth, perp[1] + sd[1] * depth, perp[2] + sd[2] * depth], q = proj(hit);
+        if (q[2] < 0.2) shadow = { x: q[0], y: q[1] };
+      }
       const dx = (v[0] * e[0] + v[1] * e[1] + v[2] * e[2]) / RJ_AU, dy = (v[0] * n[0] + v[1] * n[1] + v[2] * n[2]) / RJ_AU, dz = (v[0] * u[0] + v[1] * u[1] + v[2] * u[2]) / RJ_AU;
       const onDisk = Math.hypot(dx, dy / 0.935) < 1;
-      out[k] = { x: dx, y: dy, front: dz < 0, transit: onDisk && dz < 0, hidden: onDisk && dz > 0 };
+      out[k] = { x: dx, y: dy, front: dz < 0, transit: onDisk && dz < 0, hidden: onDisk && dz > 0, shadow };
     }
     return out;
   }
@@ -663,9 +680,12 @@
         const kind = jm[k].transit ? 'transit' : jm[k].hidden ? 'hidden' : null, prev = state[k];
         if (kind && (!prev || prev.kind !== kind)) { state[k] = { kind, start: new Date(t) }; }
         if ((!kind || (prev && prev.kind !== kind)) && prev && prev.kind) { ev.push({ moon: MOON_NAMES[k], kind: prev.kind, start: prev.start, end: new Date(t) }); state[k] = kind ? { kind, start: new Date(t) } : null; }
+        const sk = k + ':shadow', sp = state[sk], on = !!jm[k].shadow;
+        if (on && !sp) state[sk] = { kind: 'shadow', start: new Date(t) };
+        if (!on && sp) { ev.push({ moon: MOON_NAMES[k], kind: 'shadow', start: sp.start, end: new Date(t) }); state[sk] = null; }
       }
     }
-    for (const k in state) if (state[k]) ev.push({ moon: MOON_NAMES[k], kind: state[k].kind, start: state[k].start, end: null });
+    for (const k in state) if (state[k]) ev.push({ moon: MOON_NAMES[k.split(':')[0]], kind: state[k].kind, start: state[k].start, end: null });
     return ev.sort((a, b) => a.start - b.start);
   }
 
@@ -716,6 +736,28 @@
       }
     }
     return out.sort((a, b) => a.time - b.time);
+  }
+
+  /* ---------- solar eclipses as seen from one place ---------- */
+  function localSolarEclipses(start, end, lat, lon) {
+    const obs = new A.Observer(lat, lon, 0), out = [];
+    try {
+      let e = A.SearchLocalSolarEclipse(start, obs);
+      for (let k = 0; k < 80 && e.peak.time.date <= end; k++) {
+        if (e.peak.altitude > 0) out.push({ date: e.peak.time.date, kind: e.kind, obscuration: e.obscuration, altitude: e.peak.altitude,
+          begin: e.partial_begin && e.partial_begin.time.date, finish: e.partial_end && e.partial_end.time.date });
+        e = A.NextLocalSolarEclipse(e.peak.time, obs);
+      }
+    } catch (err) { }
+    return out;
+  }
+  const ECL_MEMO = new Map();
+  function nextVisibleSolarEclipse(from, lat, lon) {
+    const key = lat.toFixed(1) + ',' + lon.toFixed(1) + ',' + from.toISOString().slice(0, 10);
+    if (ECL_MEMO.has(key)) return ECL_MEMO.get(key);
+    const list = localSolarEclipses(from, new Date(from.getTime() + 40 * 365.25 * 864e5), lat, lon);
+    const v = list.find(x => x.obscuration >= 0.05) || null; // skip slivers barely worth noticing
+    ECL_MEMO.set(key, v); return v;
   }
 
   /* ---------- calendar ---------- */
@@ -783,6 +825,11 @@
         prev = L;
       }
     }
+    // solar eclipses visible from this location
+    localSolarEclipses(start, end, lat, lon).forEach(x => {
+      const kindName = { total: 'Total', annular: 'Annular', partial: 'Partial' }[x.kind] || 'Partial';
+      push(x.date, 'eclipse', `${kindName} solar eclipse`, `${Math.round(x.obscuration * 100)}% of the Sun covered at its peak from here, ${Math.round(x.altitude)}° up. Use eclipse glasses or a solar filter for every moment of the partial phases.`, { visible: true });
+    });
     // meteor showers (peak night, local)
     for (let y = start.getFullYear(); y <= end.getFullYear(); y++) {
       SHOWERS.forEach(s => {
@@ -798,6 +845,6 @@
     return ev;
   }
 
-  const api = { jupiterMoons, jupiterEvents, moonTerminator, occultations, LUNAR, azFast, compass, whereText, suggestView, eyepieceAdvice, exposurePlan, trailLimit, shutterText, MESSIER, horizonAt, CITIES, skyGlow, lightPollution, inLPBox, kmBetween, geomagLat, auroraChance, kpNeeded, nightAlert, marsLs, marsSeason, saturnRings, ringText, solarDays, A, clamp, lerp, altFast, geoEq, gast, topo, topoFixed, sepDeg, moonInfo, moonPhaseName, planetState, gearStats, estSeeing, estTransparency, PLANETS, DSO, KIND_LABEL, gearReach, scoreHour, rating, evaluateTargets, bestWindow, nights, calendar, NELM_BY_BORTLE };
+  const api = { localSolarEclipses, nextVisibleSolarEclipse, jupiterMoons, jupiterEvents, moonTerminator, occultations, LUNAR, azFast, compass, whereText, suggestView, eyepieceAdvice, exposurePlan, trailLimit, shutterText, MESSIER, horizonAt, CITIES, skyGlow, lightPollution, inLPBox, kmBetween, geomagLat, auroraChance, kpNeeded, nightAlert, marsLs, marsSeason, saturnRings, ringText, solarDays, A, clamp, lerp, altFast, geoEq, gast, topo, topoFixed, sepDeg, moonInfo, moonPhaseName, planetState, gearStats, estSeeing, estTransparency, PLANETS, DSO, KIND_LABEL, gearReach, scoreHour, rating, evaluateTargets, bestWindow, nights, calendar, NELM_BY_BORTLE };
   if (typeof module !== 'undefined') module.exports = api; else root.Core = api;
 })(this);

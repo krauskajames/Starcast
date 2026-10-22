@@ -15,15 +15,16 @@ function jupiterHTML(n){
   const W2=300, H2=90, cx=W2/2, cy=H2/2, sc=4.2;
   const moons=Object.entries(jm).map(([k,m])=>({k, name:k[0].toUpperCase()+k.slice(1), x:cx + flip*(-m.x)*sc, y:cy + flip*(-m.y)*sc, m}));
   const evs = C.jupiterEvents(tDate(n.start), tDate(n.end-1)).filter(e=>e.end==null || e.end>tDate(n.start));
-  const evText = e => `${e.moon} ${e.kind==='transit'?'crosses in front of Jupiter':'is hidden behind Jupiter'} ${e.start<tDate(n.start)?'until':'from '+hourLabel(e.start)}${e.end?` ${e.start<tDate(n.start)?'':'to '}${hourLabel(e.end)}`:''}`;
+  const evText = e => `${e.kind==='shadow'?e.moon+'’s shadow crosses Jupiter':e.moon+(e.kind==='transit'?' crosses in front of Jupiter':' is hidden behind Jupiter')} ${e.start<tDate(n.start)?'until':'from '+hourLabel(e.start)}${e.end?` ${e.start<tDate(n.start)?'':'to '}${hourLabel(e.end)}`:''}`;
   return `<div><div class="row" style="justify-content:space-between;margin-bottom:6px"><h4 style="margin:0">Jupiter's moons · ${hourLabel(d)}</h4>
       <label class="sub" style="display:flex;gap:6px;align-items:center"><input type="checkbox" id="jupFlip" ${S.jupFlip?'checked':''}> As in your reflector</label></div>
     <svg viewBox="0 0 ${W2} ${H2}" width="100%" style="max-width:${W2*1.4}px;background:#04060c;border-radius:6px;display:block" role="img" aria-label="Positions of Jupiter's four large moons">
       <ellipse cx="${cx}" cy="${cy}" rx="${sc}" ry="${(sc*0.935).toFixed(2)}" fill="#e9cf9f"/>
+      ${moons.filter(o=>o.m.shadow).map(o=>`<circle cx="${(cx + flip*(-o.m.shadow.x)*sc).toFixed(2)}" cy="${(cy + flip*(-o.m.shadow.y)*sc).toFixed(2)}" r="0.9" fill="#000"/>`).join('')}
       ${moons.map(o=>{ if(Math.abs(o.x-cx)>W2/2-6) return `<text x="${o.x<cx?6:W2-6}" y="${cy+3}" text-anchor="${o.x<cx?'start':'end'}" font-size="9" fill="#9aa6bd">${o.name} ${o.x<cx?'◂':'▸'}</text>`;
         return `<circle cx="${o.x.toFixed(1)}" cy="${o.y.toFixed(1)}" r="1.8" fill="${o.m.hidden?'#555':'#f4f6fb'}"/><text x="${o.x.toFixed(1)}" y="${(o.y + (o.k==='io'||o.k==='ganymede'?-6:12)).toFixed(1)}" text-anchor="middle" font-size="8.5" fill="#9aa6bd">${o.name}${o.m.transit?' (on disk)':o.m.hidden?' (behind)':''}</text>`; }).join('')}
     </svg>
-    <p class="note" style="margin:4px 0 0">${S.jupFlip?'Rotated 180°, the way your Newtonian shows it. ':'North up, east left, as with the naked eye or binoculars. '}${evs.length?esc(evs.map(evText).join('. '))+'.':'No moon crosses in front of Jupiter during darkness tonight.'}</p></div>`;
+    <p class="note" style="margin:4px 0 0">${S.jupFlip?'Rotated 180°, the way your Newtonian shows it. ':'North up, east left, as with the naked eye or binoculars. '}${evs.length?esc(evs.map(evText).join('. '))+'.':'No moon or moon shadow crosses Jupiter during darkness tonight.'}</p></div>`;
 }
 
 /* --- Moon on the terminator --- */
@@ -39,6 +40,22 @@ function moonFeaturesHTML(n){
 }
 
 /* --- satellite passes (ISS, Tiangong) via CelesTrak orbital elements --- */
+/* --- the Sun today: latest image from NASA's Solar Dynamics Observatory and NOAA flare data --- */
+S.sunNow = { flare:null, loaded:false };
+async function loadSunNow(){
+  if(S.sunNow.loaded) return; S.sunNow.loaded=true;
+  try{ const j=await getJSON('https://services.swpc.noaa.gov/json/goes/primary/xray-flares-latest.json');
+    const f=Array.isArray(j)?j[j.length-1]:j; if(f && (f.max_class||f.current_class)) S.sunNow.flare={ cls:f.max_class||f.current_class, at:Date.parse(f.max_time||f.begin_time||f.time_tag) };
+  }catch(e){}
+  if(S.tab==='loc'){ const b=$('#pbody'), y=b.scrollTop; renderPanel(); b.scrollTop=y; }
+}
+function sunTodayHTML(){
+  setTimeout(loadSunNow, 50);
+  const f=S.sunNow.flare, big = f && /^[MX]/.test(f.cls);
+  return `<div class="sunnow"><img src="https://sdo.gsfc.nasa.gov/assets/img/latest/latest_512_HMIIF.jpg" alt="The Sun today, seen in visible light by NASA's Solar Dynamics Observatory" width="104" height="104" loading="lazy" onerror="this.remove()">
+    <div style="min-width:0"><b>The Sun today</b><p class="note" style="margin:2px 0 0">Visible-light view from NASA’s Solar Dynamics Observatory. Dark spots here are what a white-light solar filter shows.${f?` Latest flare: <b>${esc(f.cls)}</b>${isFinite(f.at)?` at ${fmtTime.format(new Date(f.at))}`:''}${big?'. Strong flares can trigger aurora 1–3 days later.':'.'}`:''}</p></div></div>`;
+}
+
 const SATS = [[25544,'International Space Station'],[48274,'Tiangong space station']];
 S.sat = { tle:null, passes:null, err:null, busy:false, key:'' };
 async function loadTLE(){

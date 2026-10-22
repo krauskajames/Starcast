@@ -21,13 +21,13 @@ Version 3.1 · October 2026 · Weather map layers cover the contiguous US, Alask
 - **Observing plan:** tonight's targets in order, with the time, where to look ("partway up in the southwest, 32° up"), the constellation, and which eyepiece and filter to use.
 - **Red view:** the plan one target at a time in large red text for use at the telescope. It keeps the screen awake.
 - **Sky chart:** your whole sky at the chosen hour, with constellations, planets, tonight's targets and your horizon.
-- **Tonight's events:** Jupiter's moons (and when one crosses the planet), Moon features along the terminator, and visible ISS and Tiangong passes.
+- **Tonight's events:** Jupiter's moons and their shadows (and when they cross the planet), Moon features along the terminator, and visible ISS and Tiangong passes.
 - **Where to go:** named state and county parks, forests, natural areas, campgrounds and dark-sky parks within 30–120 miles, ranked by sky darkness, clouds and distance, with driving times and opening hours where known.
 - **Solar observing:** daytime clear spells, shown only once a certified solar filter is in your gear.
 
 **Planning and setup**
-- **Sky calendar:** 12 months of oppositions, elongations, meteor showers, eclipses, Moon phases, Mars seasons, and lunar occultations as seen from your spot.
-- **Gear:** telescope, binoculars and naked-eye profiles. Telescopes include eyepieces, Barlow, filters, mount and camera. The eyepiece advisor suggests what to add next; the photography helper gives starting exposures, trailing limits and a framing preview.
+- **Sky calendar:** 12 months of oppositions, elongations, meteor showers, lunar and solar eclipses, Moon phases, Mars seasons, and lunar occultations as seen from your spot, plus the next solar eclipse worth seeing from there.
+- **Gear:** telescope, binoculars and naked-eye profiles, with pick-lists of common eyepieces and cameras and a worked explanation of every number. Telescopes include eyepieces, Barlow, filters, mount and camera. The eyepiece advisor suggests what to add next. The photography helper gives starting exposures, trailing limits, and a framing preview for deep-sky objects and for the Sun, Moon and planets at today's size.
 - **Saved tab:** saved spots with sky darkness and horizon profiles, the observing log with Messier progress, alert settings, forecast checks, and backup/restore.
 - **Install on your phone's home screen** so it opens like an app.
 - **Accounts (optional):** sign in with Google to keep saved spots, gear, the observing log and settings on every device. See [SETUP-ACCOUNTS.md](SETUP-ACCOUNTS.md) to switch this on.

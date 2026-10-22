@@ -28,6 +28,7 @@ const S = {
   eval:null, savingName:null, confirmDel:null
 };
 S.layer = store.get('layer','cloud');
+S.wxOpacity = clamp(+store.get('layerOpacity', 0.9) || 0.9, 0.2, 1);
 // every saved spot gets a stable id so it can sync between devices
 if(S.saved.some(x=>!x.cid)){ S.saved.forEach(x=>{ if(!x.cid) x.cid=newId(); }); try{ localStorage.setItem('starcast.saved', JSON.stringify(S.saved)); }catch(e){} }
 if(!S.gear.filters) S.gear.filters = [{name:'UHC', type:'uhc'}];
@@ -218,10 +219,12 @@ function buildLayers(){
   const n=12, grad= L.key==='none' ? 'transparent' : Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
   $('#layers').innerHTML = `
     <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
-    <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p></div>
+    <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p>
+      ${L.key!=='none'?`<label class="opac"><span>Opacity</span><input type="range" id="wxOpacity" min="20" max="100" step="5" value="${Math.round(S.wxOpacity*100)}" aria-label="Weather layer opacity"><span class="mono" id="wxOpacityV">${Math.round(S.wxOpacity*100)}%</span></label>`:''}</div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
   if(S.ov.aurora) $('#layers').insertAdjacentHTML('beforeend', `<div class="lgroup legend"><h3>Aurora chance</h3><div class="bar" style="background:linear-gradient(90deg,${AUR_RAMP.map(r=>rgb(r[1])).join(',')})"></div><div class="ticks"><span>10%</span><span>50%</span><span>90%</span></div><p class="layer-note"><span id="aurSrc">${auroraSource()}</span> Brightest where it’s dark enough to see; faded on the daylight side.</p></div>`);
   $('#layers').insertAdjacentHTML('beforeend', basemapHTML()); wireBasemap($('#layers'));
+  const op=$('#wxOpacity'); if(op){ op.oninput=()=>{ S.wxOpacity=+op.value/100; $('#wxOpacityV').textContent=op.value+'%'; render(); }; op.onchange=()=>store.set('layerOpacity',S.wxOpacity); }
   $('#layers').querySelectorAll('[data-layer]').forEach(b=>b.onclick=()=>{ S.layer=b.dataset.layer; store.set('layer',S.layer); buildLayers(); render(); });
   $('#layers').querySelectorAll('[data-ov]').forEach(b=>b.onclick=()=>{ S.ov[b.dataset.ov]=!S.ov[b.dataset.ov]; store.set('ov',S.ov); buildLayers(); render(); });
 }
@@ -259,6 +262,7 @@ const proj = d3.geoOrthographic().clipAngle(90).precision(0.4);
 const path = d3.geoPath(proj, ctx);
 let W=0,H=0,DPR=1, baseScale=1;
 const ovCanvas = document.createElement('canvas'), ovCtx = ovCanvas.getContext('2d');
+const ovCanvas2 = document.createElement('canvas'), ovCtx2 = ovCanvas2.getContext('2d');
 const wxCanvas = document.createElement('canvas'), wxCtx = wxCanvas.getContext('2d');
 function resize(){
   const r = canvas.getBoundingClientRect();
@@ -307,7 +311,10 @@ function draw(){
   const step = quality==='hi' ? 3 : 6;
   const ow = Math.ceil(W/step), oh = Math.ceil(H/step);
   ovCanvas.width=ow; ovCanvas.height=oh;
-  const img = ovCtx.createImageData(ow,oh), px=img.data;
+  ovCanvas2.width=ow; ovCanvas2.height=oh;
+  const img = ovCtx.createImageData(ow,oh), px=img.data;      // under the weather: night and sunlit sides
+  const img2 = ovCtx2.createImageData(ow,oh), px2=img2.data;  // over the weather: aurora and planet zones
+  let anyTop=false;
   const bodies = sky.bodies, nightOn = S.ov.night, sunOn = S.ov.Sun;
   const auroraOn = S.ov.aurora, tu = S.times[S.ti];
   const useOv = auroraOn && S.aur.ov && Math.abs(tu*1000 - S.aur.ovTime) < 3*3600e3;
@@ -331,6 +338,8 @@ function draw(){
         const a = 0.15*clamp((sunAlt+0.8)/6,0,1);
         R=255; Gc=206; B=120; A=Math.max(A,a);
       }
+      if(A>0){ const k=(y*ow+x)*4; px[k]=R; px[k+1]=Gc; px[k+2]=B; px[k+3]=A*255; }
+      R=0; Gc=0; B=0; A=0;
       if(auroraOn && lat>35 || auroraOn && lat<-35){
         // whole oval, like NOAA's map; full strength where it is dark enough to see, faded in daylight
         const pr = useOv ? ovAt(lat,lon) : kpNow!=null ? kpProb(kpNow,lat,lon) : 0;
@@ -349,12 +358,13 @@ function draw(){
           R = (b.o.col[0]*a + R*A*(1-a))/na; Gc=(b.o.col[1]*a + Gc*A*(1-a))/na; B=(b.o.col[2]*a + B*A*(1-a))/na; A=na;
         }
       }
-      if(A>0){ const k=(y*ow+x)*4; px[k]=R; px[k+1]=Gc; px[k+2]=B; px[k+3]=A*255; }
+      if(A>0){ const k=(y*ow+x)*4; px2[k]=R; px2[k+1]=Gc; px2[k+2]=B; px2[k+3]=A*255; anyTop=true; }
     }
-    ovCtx.putImageData(img,0,0);
+    ovCtx.putImageData(img,0,0); ovCtx2.putImageData(img2,0,0);
     ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip();
     ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas,0,0,ow*step,oh*step); ctx.restore();
   }
+  const drawTopOverlay = () => { if(!anyTop) return; ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas2,0,0,ow*step,oh*step); ctx.restore(); };
   // weather raster over North America (US + Canada), clipped to land
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const k = r/baseScale;
@@ -368,18 +378,20 @@ function draw(){
       wxCanvas.width=ww; wxCanvas.height=wh;
       const wimg=wxCtx.createImageData(ww,wh), wp=wimg.data;
       const lpRes = k<6 ? 0.25 : 0.05;
+      const wxAlpha = Math.round(255*S.wxOpacity*(bmOn?0.8:1));
       for(let y=0;y<wh;y++) for(let x=0;x<ww;x++){
         const ll=proj.invert([bx0+x*ws+ws/2, by0+y*ws+ws/2]); if(!ll||isNaN(ll[0])) continue;
-        if(ll[1]<23||ll[1]>73||ll[0]<-172||ll[0]>-50) continue;
+        if(ll[1]<23||ll[1]>85||ll[0]<-172||ll[0]>-50) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
         const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=9); const c=L.sc(v); if(!c) continue;
-        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=bmOn?170:232;
+        const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=wxAlpha;
       }
       wxCtx.putImageData(wimg,0,0);
       ctx.save(); ctx.beginPath(); path(NA_MASK); ctx.clip(); ctx.imageSmoothingEnabled=true;
       ctx.drawImage(wxCanvas, bx0, by0, ww*ws, wh*ws); ctx.restore();
     }
   }
+  drawTopOverlay();
   // lines
   ctx.lineJoin='round';
   ctx.beginPath(); path(graticule); ctx.strokeStyle=PAL.grat; ctx.lineWidth=.6; ctx.stroke();
@@ -651,9 +663,9 @@ function panelLoc(){
 }
 function solarHTML(){
   const gs = C.gearStats(gearForCalc(), bortleFor(S.sel));
-  let h = `<div><h4>Solar observing</h4>`;
+  let h = `<div><h4>Solar observing</h4>` + sunTodayHTML();
   if(!gs.solar){
-    return h + `<div class="alert danger"><div class="h">Safety first</div><p>Never point your telescope, finder or camera at the Sun without a certified full-aperture solar filter. Even a second can permanently damage your eyes. Add a white-light solar filter in Gear to get daytime forecasts for sunspots.</p></div></div>`;
+    return h + `<div class="alert danger" style="margin-top:8px"><div class="h">Safety first</div><p>Never point your telescope, finder or camera at the Sun without a certified full-aperture solar filter. Even a second can permanently damage your eyes. Add a white-light solar filter in Gear to get daytime forecasts for sunspots.</p></div></div>`;
   }
   const days = C.solarDays(S.times, S.sel.lat, S.sel.lon, wxAt);
   h += `<ul class="tlist">${days.map(d=>{
@@ -939,6 +951,7 @@ function panelCal(){
   const now = tDate(S.ti), ms = C.marsSeason(now), sr = C.saturnRings(now);
   h += `<div class="gstats">
     <div class="stat"><span class="l">Mars season</span><span class="v" style="font-size:14px">Year ${ms.MY} · Ls ${Math.round(ms.Ls)}°</span><span class="n" style="white-space:normal">${esc(ms.north[0].toUpperCase()+ms.north.slice(1))} north, ${esc(ms.south)} south.${ms.dust?' Dust-storm season.':''}</span></div>
+    ${(()=>{ const se=C.nextVisibleSolarEclipse(new Date(S.times[0]*1000), S.sel.lat, S.sel.lon); return `<div class="stat" style="grid-column:1/-1"><span class="l">Next solar eclipse here</span><span class="v" style="font-size:14px">${se?fmtMD.format(se.date)+', '+se.date.getFullYear():'none within 40 years'}</span><span class="n" style="white-space:normal">${se?`${se.kind==='total'?'Total':se.kind==='annular'?'Annular':'Partial'} from here, ${Math.round(se.obscuration*100)}% covered, Sun ${Math.round(se.altitude)}° up`:''}</span></div>`; })()}
     <div class="stat"><span class="l">Saturn's rings</span><span class="v" style="font-size:14px">${Math.abs(sr.B).toFixed(1)}° ${sr.face} face</span><span class="n" style="white-space:normal">${sr.opening?'Opening':'Closing'}${sr.opening&&sr.face==='south'?'; widest around 2032':''}.</span></div>
   </div><p class="note" style="margin:-8px 0 0">${esc(ms.cap)} Live Martian weather reports aren't available from a free source right now, so Starcast tracks the season and dust-storm risk instead.</p>`;
   h += `<div class="filters">${F.map(([k,l])=>`<button data-cf="${k}" aria-pressed="${S.calFilter===k}">${l}</button>`).join('')}</div>`;

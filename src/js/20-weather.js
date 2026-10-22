@@ -70,7 +70,7 @@ function nearNA(lat, lon, dLat, dLon){
 }
 
 /* --- grid layers --- */
-const COARSE = { id:'coarse3', lat0:24, lon0:-168, dLat:3, dLon:3.5, nLat:17, nLon:34 };
+const COARSE = { id:'coarse4', lat0:24, lon0:-168, dLat:3, dLon:3.5, nLat:21, nLon:34 }; // to 84°N, covering the Arctic islands
 const TILE_DEG = 5, FINE = 0.5;
 function tileSpec(lat, lon){
   const la = Math.floor(lat/TILE_DEG)*TILE_DEG, lo = Math.floor(lon/TILE_DEG)*TILE_DEG;
@@ -82,7 +82,7 @@ function specPoints(spec){
   const pts=[], idx=new Int32Array(spec.nLat*spec.nLon).fill(-1);
   for(let i=0;i<spec.nLat;i++) for(let j=0;j<spec.nLon;j++){
     const lat = spec.lat0+i*spec.dLat, lon = spec.lon0+j*spec.dLon;
-    if(lat>72 || !nearNA(lat,lon,spec.dLat,spec.dLon)) continue;
+    if(lat>84 || !nearNA(lat,lon,spec.dLat,spec.dLon)) continue;
     idx[i*spec.nLon+j]=pts.length; pts.push([+lat.toFixed(3), +lon.toFixed(3)]);
   }
   return {pts, idx};
@@ -198,7 +198,7 @@ async function loadVisibleTiles(){
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
     const ll=proj.invert([W*j/6, H*i/6]); if(!ll||isNaN(ll[0])||!visiblePt(ll)) continue;
-    if(ll[1]<24||ll[1]>72||ll[0]<-170||ll[0]>-50) continue;
+    if(ll[1]<24||ll[1]>84||ll[0]<-170||ll[0]>-50) continue;
     const sp=tileSpec(ll[1],ll[0]); if(!want.has(sp.id)) want.set(sp.id,{sp,d:d3.geoDistance(ll,c)});
   }
   const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,4).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
