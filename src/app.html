@@ -78,6 +78,10 @@ button{cursor:pointer}
 .status button{pointer-events:auto;background:none;border:0;color:var(--accent);padding:0;font-size:12px;text-decoration:underline;text-underline-offset:2px}
 .top .spacer{flex:1}
 .top .iconbtn + .iconbtn{margin-left:-4px}
+.accwrap{position:relative;pointer-events:auto}
+.iconbtn.acc{color:var(--accent);border-color:var(--alert-line)}
+.accpop{position:absolute;right:0;top:calc(100% + 8px);width:min(300px,calc(100vw - 32px));background:var(--panel-solid);border:1px solid var(--line-2);border-radius:var(--r);padding:12px;z-index:20;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+.gbtn{display:inline-flex;align-items:center;gap:8px;background:var(--panel-solid);color:var(--fg);border-color:var(--line-2);font-weight:700}
 .iconbtn{white-space:nowrap;pointer-events:auto;background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:7px 10px;font-family:var(--f-display);font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
 .iconbtn[aria-pressed="true"]{color:#ff8a7a;border-color:#5a2222}
 
@@ -285,6 +289,7 @@ table.views th.r{text-align:right}
         <div class="status loading" id="status"><span class="dot"></span><span id="statusText">Loading forecast…</span></div>
       </div>
       <div class="spacer"></div>
+      <div class="accwrap"><button class="iconbtn acc" id="accountBtn" aria-haspopup="true" aria-expanded="false" hidden>Sign in</button><div class="accpop" id="accountPop" role="dialog" aria-label="Your account" hidden></div></div>
       <button class="iconbtn" id="themeBtn" title="Switch between automatic, light and dark">Theme: Auto</button>
       <button class="iconbtn" id="redBtn" aria-pressed="false" title="Red night-vision mode">Night red</button>
     </div>

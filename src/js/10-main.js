@@ -7,8 +7,9 @@ const clamp = C.clamp;
 /* ---------------- storage ---------------- */
 const store = {
   get(k, d){ try{ const v = localStorage.getItem('starcast.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem('starcast.'+k, JSON.stringify(v)); }catch(e){} }
+  set(k, v){ try{ localStorage.setItem('starcast.'+k, JSON.stringify(v)); }catch(e){} store.onChange && store.onChange(k); }
 };
+const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 const DEFAULT_GEAR = {
   name:'Barska AE10758 reflector', aperture:114, focal:900, barlow:3,
   eyepieces:[{fl:20, afov:40, name:'K20 Kellner'}],
@@ -27,6 +28,8 @@ const S = {
   eval:null, savingName:null, confirmDel:null
 };
 S.layer = store.get('layer','cloud');
+// every saved spot gets a stable id so it can sync between devices
+if(S.saved.some(x=>!x.cid)){ S.saved.forEach(x=>{ if(!x.cid) x.cid=newId(); }); try{ localStorage.setItem('starcast.saved', JSON.stringify(S.saved)); }catch(e){} }
 if(!S.gear.filters) S.gear.filters = [{name:'UHC', type:'uhc'}];
 // gear profiles (v3): telescope, binoculars or naked eye; the old single gear becomes the first profile
 S.gears = store.get('gears', null) || [Object.assign({id:1, kind:'telescope', mount:'manual'}, S.gear)];
@@ -969,7 +972,7 @@ function wirePanel(){
   b.querySelectorAll('[data-night]').forEach(x=>x.onclick=()=>{ S.night=+x.dataset.night; S.showAll=false; renderPanel(); const n=evaluate().nights[S.night]; if(n) setTime(n.start+Math.min(3,n.end-n.start-1)); });
   const sa=$('#showAll'); if(sa) sa.onclick=()=>{ S.showAll=!S.showAll; renderPanel(); };
   const save=$('#saveBtn'); if(save) save.onclick=()=>{ S.savingName = S.sel.name && !S.sel.name.includes('example') ? S.sel.name : ''; renderPanel(); const i=$('#saveName'); if(i) i.focus(); };
-  const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:bortleFor(S.sel), alerts:true}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
+  const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({cid:newId(), name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:bortleFor(S.sel), alerts:true}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
     $('#saveCancel').onclick=()=>{ S.savingName=null; renderPanel(); }; }
   const be=$('#bortleEdit'); if(be) be.onclick=()=>{ S.bortleOpen=!S.bortleOpen; renderPanel(); };
   const bs=$('#bortleSel'); if(bs) bs.onchange=()=>{ const v=+bs.value; const s=S.saved.find(x=>near(x,S.sel)); if(s){ s.bortle=v; store.set('saved',S.saved); S.eval=null; renderPanel(); } else { toast('Save this spot first to set its sky darkness'); } };

@@ -100,7 +100,7 @@ function wireLocations(b){
     const c = parseCoords($('#al_lat').value+', '+$('#al_lon').value), msg=$('#al_msg');
     if(!c){ msg.textContent='Check the coordinates: latitude −90 to 90, longitude −180 to 180.'; msg.style.color='var(--bad)'; return; }
     const nm=$('#al_name').value.trim()||'My spot', lp=C.lightPollution(c.lat,c.lon);
-    S.saved.push({name:nm, lat:c.lat, lon:c.lon, bortle: lp?lp.bortle:S.defBortle, alerts:true});
+    S.saved.push({cid:newId(), name:nm, lat:c.lat, lon:c.lon, bortle: lp?lp.bortle:S.defBortle, alerts:true});
     if($('#al_home').checked) setHome(S.saved.length-1);
     store.set('saved',S.saved); toast(`Added “${nm}”`);
     selectLocation({lat:c.lat, lon:c.lon, name:nm},{fly:true,tab:'loc'}); };

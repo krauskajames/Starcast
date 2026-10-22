@@ -10,3 +10,4 @@ loadCoarse(false);
 loadAurora();
 setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; loadCoarse(false); } }, 5*60e3);
 registerSW();
+initAccount();

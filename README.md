@@ -30,6 +30,7 @@ Version 3.1 · October 2026 · Weather map layers cover the contiguous US, Alask
 - **Gear:** telescope, binoculars and naked-eye profiles. Telescopes include eyepieces, Barlow, filters, mount and camera. The eyepiece advisor suggests what to add next; the photography helper gives starting exposures, trailing limits and a framing preview.
 - **Saved tab:** saved spots with sky darkness and horizon profiles, the observing log with Messier progress, alert settings, forecast checks, and backup/restore.
 - **Install on your phone's home screen** so it opens like an app.
+- **Accounts (optional):** sign in with Google to keep saved spots, gear, the observing log and settings on every device. See [SETUP-ACCOUNTS.md](SETUP-ACCOUNTS.md) to switch this on.
 
 ## Using it
 
@@ -109,7 +110,9 @@ Your locations go in a secret rather than a file because the repository is publi
 
 ## Your data
 
-Everything you enter (saved spots, gear, log, settings and forecast checks) stays in your browser on that device. Use **Saved → Back up and move to another device** to save it to a file, or to copy it onto your phone.
+Without an account, everything you enter (saved spots, gear, log, settings and forecast checks) stays in your browser on that device. Use **Saved → Back up and move to another device** to save it to a file, or to copy it onto your phone.
+
+If you sign in with Google, the same data is also stored in Starcast's Supabase database so it can sync between devices. Database security rules let each person read and change only their own rows. Your name, email and profile picture come from Google and are used only to show who is signed in. You can delete your cloud data from the account menu at any time.
 
 The app sends only the coordinates of spots you look at, to these services:
 - Open-Meteo, for forecasts and place search
@@ -135,6 +138,8 @@ This repository is set up for GitHub Pages: go to **Settings → Pages** and dep
 | `alerts/check.mjs` | The alert job: fetches forecasts and sends notifications |
 | `alerts/core.js` | Copy of the engine for the alert job, made by the build |
 | `.github/workflows/alerts.yml` | The schedule that runs the alert job |
+| `supabase/schema.sql` | Database tables and security rules for accounts (run once in Supabase) |
+| `SETUP-ACCOUNTS.md` | Step-by-step guide to switching on Google sign-in |
 | `CLAUDE.md` | Project notes for Claude Code |
 | `README.md` | This file |
 | `ROADMAP.md` | Feature log: everything planned and its status |
@@ -149,7 +154,7 @@ To change the app, edit the files in `src/` and run `npm run build` (needs Node.
 - Driving times come from a free public routing service and may be missing at busy times; park hours appear only where OpenStreetMap lists them.
 - Satellite passes cover the ISS and Tiangong only.
 - No live Martian weather; Mars season and dust-storm risk are shown instead.
-- Saved data lives in one browser; use backup and restore to move it.
+- Without an account, saved data lives in one browser; use backup and restore, or sign in, to move it.
 
 ## Credits
 
@@ -164,6 +169,7 @@ To change the app, edit the files in `src/` and run `npm run build` (needs Node.
 - Star, constellation and Messier data from [d3-celestial](https://github.com/ofrohn/d3-celestial) by Olaf Frohn (BSD 3-Clause License).
 - [D3](https://d3js.org/) and [TopoJSON](https://github.com/topojson/topojson-client) by Mike Bostock (ISC License).
 - Map outlines from [Natural Earth](https://www.naturalearthdata.com/) (public domain) via world-atlas and us-atlas.
+- Accounts and database by [Supabase](https://supabase.com/) (supabase-js, MIT License) with [PostGIS](https://postgis.net/).
 - Phone notifications through [ntfy.sh](https://ntfy.sh/); email through [Nodemailer](https://nodemailer.com/).
 - Inspired by [ClearDarkSky](https://www.cleardarksky.com/), [earth.nullschool.net](https://earth.nullschool.net/) and [Stellarium](https://stellarium.org/).
 

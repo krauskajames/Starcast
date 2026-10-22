@@ -20,12 +20,19 @@ Starcast is an astronomy viewing-conditions globe: earth.nullschool-style weathe
 - Alerts: GitHub Actions on a schedule (`.github/workflows/alerts.yml`) runs `alerts/check.mjs`, which sends via ntfy and/or Gmail SMTP. Locations and settings live in the `ALERTS_CONFIG` repository secret, not in the public repo, to keep home coordinates private. Never commit `alerts.json` or any secret.
 - Safety: never recommend observing the Sun unless a solar filter is listed in gear; otherwise show the warning.
 
+## Accounts (v3.2)
+
+- Supabase (Postgres + PostGIS) with Google sign-in, PKCE flow. Config constants `SUPABASE_URL` and `SUPABASE_ANON_KEY` (publishable key) at the top of `src/js/75-account.js`; empty means accounts are off and the Sign in button is hidden. The service_role key must never be used in the app.
+- `supabase/schema.sql`: `user_state` (one jsonb per user mirroring the localStorage keys in `SYNC_KEYS`) and `saved_locations` (geography(Point,4326), GiST index, written only via the `sync_saved_locations(jsonb)` function, read via the `saved_locations_v` view). RLS: own rows only, `to authenticated`. Verified on local Postgres 16 + PostGIS: idempotent, user B cannot read/insert/update A's rows, anon sees nothing.
+- Sync: `store.set` calls `store.onChange`; changes to `SYNC_KEYS` are pushed after 1.5 s. On sign-in the device's data merges with the cloud (lists by id: saved `cid`, gears/log/checks `id`; scalars: cloud wins), then one reload. Saved spots carry a stable `cid` (added on load if missing).
+- Setup steps for the owner are in `SETUP-ACCOUNTS.md`.
+
 ## Repository layout
 
 | Path | What it is |
 |---|---|
 | `src/app.html` | Page markup and CSS. `<!--LIBS-->` marks where libraries go, `<!--APP-->` where the modules go |
-| `src/js/*.js` | App modules, concatenated in filename order inside one IIFE: `10-main` (state, globe, time bar, panels), `20-weather` (request budget, grid/tiles, IndexedDB cache, light-pollution tiles), `25-basemap` (tile base maps warped onto the globe with per-triangle affine transforms; no pixel access needed), `30-locations` (search, coordinates, home, horizon), `40-telescope` (plan, red view, sky chart, log), `50-gear` (profiles, advisor, photography), `60-events` (Jupiter moons, Moon terminator, satellite passes, occultations), `70-app` (model agreement, drive times, backup, install), `90-boot` |
+| `src/js/*.js` | App modules, concatenated in filename order inside one IIFE: `10-main` (state, globe, time bar, panels), `20-weather` (request budget, grid/tiles, IndexedDB cache, light-pollution tiles), `25-basemap` (tile base maps warped onto the globe with per-triangle affine transforms; no pixel access needed), `30-locations` (search, coordinates, home, horizon), `40-telescope` (plan, red view, sky chart, log), `50-gear` (profiles, advisor, photography), `60-events` (Jupiter moons, Moon terminator, satellite passes, occultations), `70-app` (model agreement, drive times, backup, install), `75-account` (Supabase sign-in and sync), `90-boot` |
 | `src/core.js` | Shared engine: astronomy, gear maths, condition estimates, target scoring, calendar, Mars seasons, Saturn rings, light pollution, aurora, alert text. Runs in the browser and in Node |
 | `build.mjs` | Builds `index.html` from `src/` plus libraries and sky data (d3-celestial stars ≤ mag 5, constellation lines/boundaries, with inside-out boundaries fixed), and copies `src/core.js` to `alerts/core.js` |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png` | Home-screen install; network-first service worker for the app shell only |

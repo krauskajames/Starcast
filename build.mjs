@@ -33,6 +33,7 @@ const libs = [
   js(nm('topojson-client/dist/topojson-client.min.js')),
   js(nm('astronomy-engine/astronomy.browser.min.js')),
   js(nm('satellite.js/dist/satellite.min.js')),
+  js(nm('@supabase/supabase-js/dist/umd/supabase.js')),
   `<script>window.GEO=${JSON.stringify(geo)};window.SKY=${JSON.stringify(sky)};</script>`,
   js(new URL('./src/core.js', import.meta.url))
 ].join('\n');

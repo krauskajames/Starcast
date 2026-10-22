@@ -157,14 +157,16 @@ Last updated: October 20, 2026 · Current version: v3.1
 | Hosted on GitHub Pages | ✅ | |
 | Install on a phone's home screen; app works offline (forecast needs a connection) | ✅ | v3.0 |
 | Settings backup and restore by file, to move between devices | ✅ | v3.0 |
-| Automatic sync across devices (accounts) | 💡 | |
+| Accounts: sign in with Google, sync saved spots, gear, log and settings across devices | 🔧 | v3.2; built and tested, switched on once Supabase and Google are set up (SETUP-ACCOUNTS.md) |
+| Saved spots stored as PostGIS points with row-level security | ✅ | v3.2; ready for spatial queries |
+| Alerts managed inside the app (moved from GitHub secret to Supabase) | 💡 | Next step after accounts |
 | Phone app in the app stores | 💡 | |
 
 ---
 
 ## Version history
 
-- **v3.2 (Oct 22, 2026):** Multi-hue colour scales for cloud cover, observing (viridis), seeing and transparency (red to deep blue), dew risk and wind, so middle values read clearly. Detailed weather patches shown only when zoomed in to a region, with wider blended edges.
+- **v3.2 (Oct 22, 2026):** Accounts (Google sign-in through Supabase) with cross-device sync and PostGIS saved locations, ready to switch on. Multi-hue colour scales for cloud cover, observing (viridis), seeing and transparency (red to deep blue), dew risk and wind, so middle values read clearly. Detailed weather patches shown only when zoomed in to a region, with wider blended edges.
 - **v3.1.4 (Oct 21, 2026):** Fixed twinkling holes in the Observing layer under overcast skies (a rounding overshoot past 100% cloud produced invalid values).
 - **v3.1.3 (Oct 21, 2026):** Smoother weather map: finer continental grid (3° × 3.5°), smooth interpolation between points, detailed patches used only when zoomed in and blended in at their edges, so no more blobs or a hard-edged square around your spot.
 - **v3.1.2 (Oct 21, 2026):** Aurora layer redrawn to match NOAA's map: the whole oval in NOAA's green-yellow-red probability colors, smoothly interpolated, faded rather than cut off on the daylight side, with a legend saying which NOAA forecast is shown.
