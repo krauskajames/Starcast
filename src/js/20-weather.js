@@ -193,7 +193,7 @@ async function ensureTilesAround(lat, lon, km){
 let tileTimer=null;
 function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 700); }
 async function loadVisibleTiles(){
-  if(!WX.coarse || DEMO && false || proj.scale() < baseScale*5) return;
+  if(!WX.coarse || proj.scale() < baseScale*8) return;
   const c=proj.invert([W/2,H/2]); if(!c) return;
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
@@ -238,7 +238,7 @@ const tileReady = T => T && !T.empty && T.nT && !(T.todo && T.todo.length) && T.
 // how far (0..1) to trust the detail tile here: fades out over 1 degree toward edges
 // that have no finished neighbouring tile, so detail blends into the continental grid
 function tileTrust(T, lat, lon){
-  const F=1.0, sides=[
+  const F=1.5, sides=[
     [lat-T.lat0, tileSpec(T.lat0-0.1, lon)], [T.lat0+TILE_DEG-lat, tileSpec(T.lat0+TILE_DEG+0.1, lon)],
     [lon-T.lon0, tileSpec(lat, T.lon0-0.1)], [T.lon0+TILE_DEG-lon, tileSpec(lat, T.lon0+TILE_DEG+0.1)] ];
   let w=1;

@@ -153,14 +153,23 @@ function ramp(stops){
     return stops[stops.length-1][1];
   };
 }
+// Multi-hue colour scales, so middle values are as easy to read as the extremes.
+// Each runs dark-to-light or bad-to-good in a consistent direction.
+const hex = h => [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)];
+const stops = (dom, hexes) => ramp(hexes.map((h,i)=>[dom[0]+(dom[1]-dom[0])*i/(hexes.length-1), hex(h)]));
 const SC = {
-  cloud: ramp([[0,[18,52,138]],[25,[44,92,176]],[50,[104,138,196]],[75,[170,184,208]],[100,[232,234,240]]]),
-  q5: ramp([[1,[228,230,238]],[2,[160,178,208]],[3,[92,128,192]],[4,[40,86,168]],[5,[16,48,132]]]),
+  // clouds: dark clear sky -> blue -> teal -> sage -> pale overcast
+  cloud: stops([0,100], ['#0b1638','#163f7c','#1f7a99','#4fa39a','#a3bfa6','#e4e5dc','#f7f6f1']),
+  // observing score: viridis (poor = deep purple, great = bright yellow-green)
+  obs: stops([0,100], ['#2b0a3d','#43327f','#2f6b8e','#21918c','#3bb87a','#9bd44a','#f2e535']),
+  // seeing and transparency 1..5: red (bad) -> amber -> pale -> sky blue -> deep blue (excellent)
+  q5: stops([1,5], ['#b8323f','#e07a4a','#ecc66d','#cfe0c3','#69b3d6','#2c69b0','#1b3d86']),
   jet: ramp([[0,[28,40,84]],[70,[34,104,150]],[120,[96,170,140]],[160,[228,196,84]],[210,[230,116,52]],[280,[196,44,72]]]),
-  dew: ramp([[0,[214,72,72]],[2,[226,148,68]],[4,[188,176,108]],[7,[64,128,150]],[12,[22,60,128]]]),
-  obs: ramp([[0,[40,34,52]],[25,[70,62,96]],[50,[56,104,164]],[75,[48,156,176]],[100,[118,224,208]]]),
+  // dew risk: temperature minus dew point; red (dew forming) -> orange -> yellow -> green -> blue (dry)
+  dew: ramp([[0,hex('#c0303f')],[1,hex('#e0663f')],[2,hex('#eba24a')],[3.5,hex('#e2d36a')],[5,hex('#8fc47a')],[8,hex('#3f9fa8')],[12,hex('#26569e')]]),
   kp: (level, kp) => level>=3 ? [70,230,140] : level===2 ? [60,170,110] : level===1 ? [50,120,96] : kp>=3 ? [52,72,96] : [34,48,72],
-  wind: ramp([[0,[16,48,132]],[10,[40,86,168]],[20,[104,138,196]],[30,[180,190,210]],[45,[236,236,242]]]),
+  // surface wind (forecast strip): calm blue -> green -> yellow -> red gusty
+  wind: ramp([[0,hex('#1f4e96')],[10,hex('#2f8f9d')],[20,hex('#7cc27c')],[30,hex('#e5c454')],[45,hex('#d9583f')]]),
   lp: ramp([[17.6,[250,246,240]],[18.4,[236,96,72]],[18.9,[240,150,56]],[19.5,[236,212,72]],[20.5,[96,176,96]],[21.4,[44,104,176]],[21.7,[34,56,110]],[21.95,[16,18,34]]]),
   temp: ramp([[-20,[110,80,170]],[-5,[60,110,200]],[5,[60,160,180]],[15,[150,190,90]],[25,[230,170,60]],[35,[220,80,60]]])
 };
@@ -168,10 +177,10 @@ const rgb = c => c ? `rgb(${c[0]|0},${c[1]|0},${c[2]|0})` : 'transparent';
 
 /* ---------------- layers ---------------- */
 const LAYERS = [
-  {id:'cloud', name:'Cloud cover', key:'cloud', sc:SC.cloud, ticks:['Clear','50%','Overcast'], dom:[0,100], note:'Total cloud from the model blend. Dark blue is clear sky.'},
-  {id:'obs', name:'Observing', key:'obs', sc:SC.obs, ticks:['Poor','Fair','Great'], dom:[0,100], note:'Clear sky, darkness, steady air and transparency combined into one score.'},
-  {id:'seeing', name:'Seeing', key:'seeing', sc:SC.q5, ticks:['1 bad','3','5 steady'], dom:[1,5], note:'Estimated steadiness of the air. Matters most for planets, the Moon and double stars.'},
-  {id:'transp', name:'Transparency', key:'transp', sc:SC.q5, ticks:['1 hazy','3','5 crisp'], dom:[1,5], note:'Estimated clarity from high cloud and moisture. Matters most for galaxies and nebulae.'},
+  {id:'cloud', name:'Cloud cover', key:'cloud', sc:SC.cloud, ticks:['Clear','50%','Overcast'], dom:[0,100], note:'Total cloud from the model blend. Dark navy is clear sky; teal and sage are partly cloudy; pale is overcast.'},
+  {id:'obs', name:'Observing', key:'obs', sc:SC.obs, ticks:['Poor','Fair','Great'], dom:[0,100], note:'Clear sky, darkness, steady air and transparency combined into one score. Yellow-green is best.'},
+  {id:'seeing', name:'Seeing', key:'seeing', sc:SC.q5, ticks:['1 bad','3 average','5 steady'], dom:[1,5], note:'Estimated steadiness of the air. Matters most for planets, the Moon and double stars.'},
+  {id:'transp', name:'Transparency', key:'transp', sc:SC.q5, ticks:['1 hazy','3 average','5 crisp'], dom:[1,5], note:'Estimated clarity from high cloud and moisture. Matters most for galaxies and nebulae.'},
   {id:'high', name:'High cloud', key:'hcloud', sc:SC.cloud, ticks:['None','50%','Full'], dom:[0,100], note:'Thin cirrus that hides faint objects even when the sky looks clear.'},
   {id:'jet', name:'Jet stream', key:'j250', sc:SC.jet, ticks:['Calm','150 km/h','280+'], dom:[0,280], note:'Wind at 250 hPa (about 34,000 ft). Fast jet streams blur planets.'},
   {id:'dew', name:'Dew risk', key:'dew', sc:SC.dew, ticks:['Dew likely','4°C','Dry'], dom:[0,12], note:'Gap between temperature and dew point. Under 2°C your optics will fog without a dew heater.'},
@@ -360,7 +369,7 @@ function draw(){
         const ll=proj.invert([bx0+x*ws+ws/2, by0+y*ws+ws/2]); if(!ll||isNaN(ll[0])) continue;
         if(ll[1]<23||ll[1]>73||ll[0]<-172||ll[0]>-50) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
-        const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=5); const c=L.sc(v); if(!c) continue;
+        const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=9); const c=L.sc(v); if(!c) continue;
         const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=bmOn?170:232;
       }
       wxCtx.putImageData(wimg,0,0);
