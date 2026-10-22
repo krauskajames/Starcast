@@ -868,7 +868,7 @@ function panelSaved(){
   h += logHTML();
   h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
 
   return h;
 }
