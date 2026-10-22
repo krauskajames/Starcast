@@ -8,8 +8,8 @@
 
 // Filled in from the Supabase dashboard: Project Settings -> API. The publishable (anon) key is
 // meant to be public; row-level security in the database keeps each person's data private.
-const SUPABASE_URL = '';
-const SUPABASE_ANON_KEY = '';
+const SUPABASE_URL = 'https://lqlkyanlnmszxyuyqjyd.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_QYdjcr5V44YgWq676MwGFQ_aYkfGlGB';
 
 const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity','frameBarlow'];
 const LIST_IDS = { saved:'cid', gears:'id', log:'id', checks:'id' };

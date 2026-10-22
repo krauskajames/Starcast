@@ -162,7 +162,7 @@ Last updated: October 22, 2026 · Current version: v3.3
 | Hosted on GitHub Pages | ✅ | |
 | Install on a phone's home screen; app works offline (forecast needs a connection) | ✅ | v3.0 |
 | Settings backup and restore by file, to move between devices | ✅ | v3.0 |
-| Accounts: sign in with Google, sync saved spots, gear, log and settings across devices | 🔧 | v3.2; built and tested, switched on once Supabase and Google are set up (SETUP-ACCOUNTS.md) |
+| Accounts: sign in with Google, sync saved spots, gear, log and settings across devices | 🔧 | v3.2; Supabase project connected Oct 22, 2026; awaiting first real sign-in test |
 | Saved spots stored as PostGIS points with row-level security | ✅ | v3.2; ready for spatial queries |
 | Alerts managed inside the app (moved from GitHub secret to Supabase) | 💡 | Next step after accounts |
 | Phone app in the app stores | 💡 | |

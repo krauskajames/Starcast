@@ -22,7 +22,7 @@ Starcast is an astronomy viewing-conditions globe: earth.nullschool-style weathe
 
 ## Accounts (v3.2)
 
-- Supabase (Postgres + PostGIS) with Google sign-in, PKCE flow. Config constants `SUPABASE_URL` and `SUPABASE_ANON_KEY` (publishable key) at the top of `src/js/75-account.js`; empty means accounts are off and the Sign in button is hidden. The service_role key must never be used in the app.
+- Supabase (Postgres + PostGIS) with Google sign-in, PKCE flow. Config constants `SUPABASE_URL` and `SUPABASE_ANON_KEY` (publishable key) at the top of `src/js/75-account.js`; empty means accounts are off and the Sign in button is hidden. Configured Oct 22, 2026 for Supabase project `lqlkyanlnmszxyuyqjyd`. The service_role key must never be used in the app.
 - `supabase/schema.sql`: `user_state` (one jsonb per user mirroring the localStorage keys in `SYNC_KEYS`) and `saved_locations` (geography(Point,4326), GiST index, written only via the `sync_saved_locations(jsonb)` function, read via the `saved_locations_v` view). RLS: own rows only, `to authenticated`. Verified on local Postgres 16 + PostGIS: idempotent, user B cannot read/insert/update A's rows, anon sees nothing.
 - Sync: `store.set` calls `store.onChange`; changes to `SYNC_KEYS` are pushed after 1.5 s. On sign-in the device's data merges with the cloud (lists by id: saved `cid`, gears/log/checks `id`; scalars: cloud wins), then one reload. Saved spots carry a stable `cid` (added on load if missing).
 - Setup steps for the owner are in `SETUP-ACCOUNTS.md`.
