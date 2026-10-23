@@ -8,16 +8,18 @@ Fields follow simple formulas so the output can be checked:
 import sys, os, numpy as np, eccodes
 out, cyc = sys.argv[1], sys.argv[2]   # cyc like 2026102312
 WAVY = '--wavy' in sys.argv          # moving cloud bands instead of the checkable formulas
+HALF = '--half' in sys.argv          # 0.5 degree files (pgrb2.0p50) instead of 1 degree
+D = 0.5 if HALF else 1.0; RES = '0p50' if HALF else '1p00'
 ymd, hh = cyc[:8], cyc[8:]
 d = os.path.join(out, f'gfs.{ymd}', hh, 'atmos'); os.makedirs(d, exist_ok=True)
-lats = np.linspace(90, -90, 181); lons = np.arange(360.0)
+lats = np.linspace(90, -90, int(180 / D) + 1); lons = np.arange(0, 360, D)
 LAT, LON = np.meshgrid(lats, lons, indexing='ij'); LONW = np.where(LON >= 180, LON - 360, LON)
 
 def msg(disc, cat, num, ltype, lval, vals, fh, avg=None):
     g = eccodes.codes_grib_new_from_samples('GRIB2')
-    for k, v in [('Ni', 360), ('Nj', 181), ('latitudeOfFirstGridPointInDegrees', 90), ('longitudeOfFirstGridPointInDegrees', 0),
-                 ('latitudeOfLastGridPointInDegrees', -90), ('longitudeOfLastGridPointInDegrees', 359),
-                 ('iDirectionIncrementInDegrees', 1), ('jDirectionIncrementInDegrees', 1), ('jScansPositively', 0),
+    for k, v in [('Ni', len(lons)), ('Nj', len(lats)), ('latitudeOfFirstGridPointInDegrees', 90), ('longitudeOfFirstGridPointInDegrees', 0),
+                 ('latitudeOfLastGridPointInDegrees', -90), ('longitudeOfLastGridPointInDegrees', 360 - D),
+                 ('iDirectionIncrementInDegrees', D), ('jDirectionIncrementInDegrees', D), ('jScansPositively', 0),
                  ('dataDate', int(ymd)), ('dataTime', int(hh) * 100)]:
         eccodes.codes_set(g, k, v)
     if avg:
@@ -60,7 +62,7 @@ for fh in range(0, 73, 3):
         uu = u * (1 + np.sin(np.radians(LAT * 4 + LON - fh * 2))) if WAVY else np.full(LAT.shape, float(u))
         ms.append((msg(0, 2, 2, t, lv, uu, fh), 'UGRD', name, f'{fh} hour fcst'))
         ms.append((msg(0, 2, 3, t, lv, np.full(LAT.shape, float(v)), fh), 'VGRD', name, f'{fh} hour fcst'))
-    name = f'gfs.t{hh}z.pgrb2.1p00.f{fh:03d}'
+    name = f'gfs.t{hh}z.pgrb2.{RES}.f{fh:03d}'
     off, idx = 0, []
     with open(os.path.join(d, name), 'wb') as f:
         for i, (b, var, lev, desc) in enumerate(ms):

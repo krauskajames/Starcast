@@ -34,7 +34,7 @@ jobs:
       - name: Global weather data
         # A push only republishes the site, so it copies the weather already online
         # (and builds fresh data only if that fails). Scheduled runs build the newest GFS run.
-        run: python pipeline/gfs.py --out _site/data/wx --reuse-from "$PUBLISHED" ${{ github.event_name == 'push' && '--reuse-only' || '' }}
+        run: python pipeline/gfs.py --res 0p50 --out _site/data/wx --reuse-from "$PUBLISHED" ${{ github.event_name == 'push' && '--reuse-only' || '' }}
       - name: Site files
         run: |
           cp index.html manifest.webmanifest sw.js icon-192.png icon-512.png privacy.html terms.html legal.css _site/

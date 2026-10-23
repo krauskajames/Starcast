@@ -198,11 +198,34 @@ def regrid(g, grid):
         v = np.where(v == miss, np.nan, v)
     lats = grid['lat0'] + grid['d'] * np.arange(grid['nLat'])
     lons = grid['lon0'] + grid['d'] * np.arange(grid['nLon'])
+    # A finer source is averaged down (tent filter one output cell wide) rather than point-sampled,
+    # so single-cell showers don't turn into speckle on the coarser map.
+    k = int(round(grid['d'] / di))
+    if k > 1:
+        v = smooth(v, k)
     rows = np.rint(((lats - lat1) if south_first else (lat1 - lats)) / dj).astype(int)
     cols = np.rint(((lons - lon1) % 360) / di).astype(int) % ni
     if rows.min() < 0 or rows.max() >= nj:
         raise RuntimeError('GRIB grid does not cover the globe')
     return v[np.ix_(rows, cols)].astype(np.float32)
+
+
+def smooth(v, k):
+    """Tent-weighted moving average over 2k-1 cells: wraps in longitude, clamps at the poles, skips gaps."""
+    w = [k - abs(j) for j in range(-(k - 1), k)]
+    m = np.isfinite(v).astype(np.float64)
+    a = np.where(m > 0, v, 0.0).astype(np.float64)
+    num, den = np.zeros_like(a), np.zeros_like(a)
+    for j, wt in zip(range(-(k - 1), k), w):          # along longitude (wraps)
+        num += wt * np.roll(a, j, axis=1); den += wt * np.roll(m, j, axis=1)
+    a2, m2 = num, den
+    num, den = np.zeros_like(a), np.zeros_like(a)
+    n = a.shape[0]
+    for j, wt in zip(range(-(k - 1), k), w):          # along latitude (edge rows repeat)
+        idx = np.clip(np.arange(n) + j, 0, n - 1)
+        num += wt * a2[idx]; den += wt * m2[idx]
+    with np.errstate(invalid='ignore', divide='ignore'):
+        return np.where(den > 0, num / den, np.nan)
 
 
 def pick(entries, fh, prev):

@@ -1,7 +1,7 @@
 """Record portfolio media from the live Starcast site (run by .github/workflows/media.yml).
 
 Writes to media/:
-  starcast-globe.mp4 / .webm   12-second seamless loop of the turning globe with live weather (5:3)
+  starcast-globe.mp4           12-second seamless loop of the turning globe with live weather (5:3)
   starcast-globe.gif           the same loop as a GIF (smaller and banded; for places that need a GIF)
   starcast-globe.jpg           first frame, used as the video poster
   starcast-ui.jpg              the full interface on a desktop screen
@@ -37,7 +37,6 @@ async def globe(p):
     src = os.path.join(frames, '%04d.png')
     ff = lambda *a: subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', src, *a], check=True)
     ff('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '22', '-preset', 'slow', '-movflags', '+faststart', os.path.join(OUT, 'starcast-globe.mp4'))
-    ff('-c:v', 'libvpx-vp9', '-crf', '40', '-b:v', '0', '-row-mt', '1', os.path.join(OUT, 'starcast-globe.webm'))
     ff('-vf', 'fps=12,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=sierra2_4a', os.path.join(OUT, 'starcast-globe.gif'))
     subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(frames, '0000.png'), '-q:v', '3', os.path.join(OUT, 'starcast-globe.jpg')], check=True)
     shutil.rmtree(frames)
