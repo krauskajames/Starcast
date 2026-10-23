@@ -281,9 +281,9 @@ function resize(){
   const k = baseScale ? proj.scale()/baseScale : 1;
   baseScale = m*0.45;
   const phone = window.innerWidth<=860;
-  const top = MODE.embed ? 0 : phone ? 64 : 0, bottom = MODE.embed ? (phone && !MODE.record ? 90 : 0) : phone ? 140 : 70;
+  const top = MODE.record ? 0 : phone ? 64 : 0, bottom = MODE.embed ? (phone && !MODE.record ? 96 : 0) : phone ? 140 : 70;
   const avail = Math.max(120, Math.min(W, H-top-bottom));
-  if(!resize.done){ if(MODE.embed) proj.scale(Math.min(W,H)*0.43).rotate([96,-28]); else proj.scale(avail*(phone?8.5:6.4)).rotate([89.6,-44.7]); resize.done=true; }
+  if(!resize.done){ if(MODE.embed) proj.scale((MODE.record ? Math.min(W,H) : avail)*0.43).rotate([96,-28]); else proj.scale(avail*(phone?8.5:6.4)).rotate([89.6,-44.7]); resize.done=true; }
   else proj.scale(baseScale*k);
   proj.translate([MODE.embed && !phone && !MODE.record ? W/2 + 110 : W/2, top + (H-top-bottom)/2]);
   render(); drawBand();
