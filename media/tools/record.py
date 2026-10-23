@@ -27,7 +27,7 @@ async def globe(p):
     pg = await b.new_page(viewport={'width': W, 'height': H})
     await pg.goto(URL + '?record&theme=dark')
     await wait_for_weather(pg)
-    await pg.evaluate(f"() => {{ __sc.S.layer = '{LAYER}'; }}")
+    await pg.evaluate(f"() => {{ __sc.S.layer = '{LAYER}'; __sc.S.ov = {{ night: true }}; }}")
     n = FPS * SECONDS
     for i in range(n):
         # one full turn, so the loop is seamless; tilted to show the northern hemisphere

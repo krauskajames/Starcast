@@ -410,11 +410,11 @@ function draw(){
   ctx.beginPath(); path({type:'Sphere'}); ctx.strokeStyle=PAL.rim; ctx.lineWidth=1; ctx.stroke();
   // sub-body points (where the body is overhead)
   ctx.font='600 11px "Chakra Petch", system-ui, sans-serif'; ctx.textBaseline='middle';
-  if(sunOn){
+  if(sunOn && !MODE.record){
     const lon=((sky.sun.ra*15 - sky.g*15 + 540)%360)-180, p=visiblePt([lon,sky.sun.dec]);
     if(p){ ctx.beginPath(); ctx.arc(p[0],p[1],6,0,7); ctx.fillStyle='#ffce78'; ctx.fill(); ctx.strokeStyle='rgba(255,206,120,.5)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p[0],p[1],11,0,7); ctx.stroke(); ctx.fillStyle=PAL.label; ctx.fillText('Sun overhead',p[0]+15,p[1]); }
   }
-  for(const b of sky.bodies){
+  for(const b of (MODE.record ? [] : sky.bodies)){
     const lon = ((b.ra*15 - sky.g*15 + 540)%360)-180;
     const p = visiblePt([lon,b.dec]); if(!p) continue;
     ctx.beginPath(); ctx.arc(p[0],p[1],4,0,7); ctx.fillStyle=rgb(b.o.col); ctx.fill();

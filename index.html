@@ -1916,11 +1916,11 @@ function draw(){
   ctx.beginPath(); path({type:'Sphere'}); ctx.strokeStyle=PAL.rim; ctx.lineWidth=1; ctx.stroke();
   // sub-body points (where the body is overhead)
   ctx.font='600 11px "Chakra Petch", system-ui, sans-serif'; ctx.textBaseline='middle';
-  if(sunOn){
+  if(sunOn && !MODE.record){
     const lon=((sky.sun.ra*15 - sky.g*15 + 540)%360)-180, p=visiblePt([lon,sky.sun.dec]);
     if(p){ ctx.beginPath(); ctx.arc(p[0],p[1],6,0,7); ctx.fillStyle='#ffce78'; ctx.fill(); ctx.strokeStyle='rgba(255,206,120,.5)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p[0],p[1],11,0,7); ctx.stroke(); ctx.fillStyle=PAL.label; ctx.fillText('Sun overhead',p[0]+15,p[1]); }
   }
-  for(const b of sky.bodies){
+  for(const b of (MODE.record ? [] : sky.bodies)){
     const lon = ((b.ra*15 - sky.g*15 + 540)%360)-180;
     const p = visiblePt([lon,b.dec]); if(!p) continue;
     ctx.beginPath(); ctx.arc(p[0],p[1],4,0,7); ctx.fillStyle=rgb(b.o.col); ctx.fill();
@@ -2944,21 +2944,19 @@ function glStep(i){
   if(GL.dec.size > GL_KEEP) GL.dec.delete(GL.dec.keys().next().value);
   return d;
 }
-// smooth value at one step: Catmull-Rom over 4×4 points, wrapping around in longitude
+// smooth value at one step: cubic B-spline over 4×4 points, wrapping around in longitude.
+// GFS cloud is close to all-or-nothing per cell; a B-spline (unlike an interpolating spline,
+// which would need clamping) blends that into soft edges instead of square blocks, and never overshoots.
+const bsw = t => { const t2=t*t, t3=t2*t; return [(1-t)*(1-t)*(1-t)/6, (3*t3-6*t2+4)/6, (-3*t3+3*t2+3*t+1)/6, t3/6]; };
 function glSpace(a, lat, lon){
   const g = GL.man.grid;
   const fi = (lat-g.lat0)/g.d, fj = (((lon-g.lon0)%360)+360)%360/g.d;
   const i = Math.min(Math.floor(fi), g.nLat-2), j = Math.floor(fj), di = fi-i, dj = fj-j;
   const at = (ii,jj) => a[Math.max(0,Math.min(g.nLat-1,ii))*g.nLon + ((jj%g.nLon)+g.nLon)%g.nLon];
-  const rows=[]; let ok=true;
-  for(let m=-1;m<=2;m++){ const r=[at(i+m,j-1),at(i+m,j),at(i+m,j+1),at(i+m,j+2)]; if(r.some(isNaN)){ ok=false; break; } rows.push(cr(r[0],r[1],r[2],r[3],dj)); }
-  const c00=at(i,j), c01=at(i,j+1), c10=at(i+1,j), c11=at(i+1,j+1);
-  if(ok){
-    const v=cr(rows[0],rows[1],rows[2],rows[3],di);
-    return Math.max(Math.min(c00,c01,c10,c11), Math.min(Math.max(c00,c01,c10,c11), v));
-  }
-  let s=0,w=0; [[c00,(1-di)*(1-dj)],[c01,(1-di)*dj],[c10,di*(1-dj)],[c11,di*dj]].forEach(([v,wt])=>{ if(!isNaN(v)&&wt>0){ s+=v*wt; w+=wt; } });
-  return w>0 ? s/w : NaN;
+  const wi = bsw(di), wj = bsw(dj);
+  let s=0, w=0;
+  for(let m=0;m<4;m++) for(let n=0;n<4;n++){ const v=at(i+m-1,j+n-1); if(isNaN(v)) continue; const wt=wi[m]*wj[n]; s+=v*wt; w+=wt; }
+  return w>0.05 ? s/w : NaN;
 }
 // value for map hour t, interpolated between the 3-hourly steps
 function globalValue(key, t, lat, lon){
