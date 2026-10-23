@@ -4,10 +4,18 @@ const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const clamp = C.clamp;
 
+/* ---------------- page modes ---------------- */
+// ?embed: globe and layer buttons only (portfolio case study). ?record: the globe alone, turning (portfolio video).
+// Neither saves settings, signs in, or asks for spot forecasts.
+const MODE = { embed: /[?&](embed|record)\b/.test(location.search), record: /[?&]record\b/.test(location.search) };
+if(MODE.embed) document.documentElement.classList.add('embed');
+if(MODE.record) document.documentElement.classList.add('record');
+
 /* ---------------- storage ---------------- */
 const store = {
-  get(k, d){ try{ const v = localStorage.getItem('starcast.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
-  set(k, v){ try{ localStorage.setItem('starcast.'+k, JSON.stringify(v)); }catch(e){} store.onChange && store.onChange(k); }
+  get(k, d){ if(MODE.embed && k in store.mem) return store.mem[k]; try{ const v = localStorage.getItem('starcast.'+k); return v ? JSON.parse(v) : d; }catch(e){ return d; } },
+  set(k, v){ if(MODE.embed){ store.mem[k]=v; return; } try{ localStorage.setItem('starcast.'+k, JSON.stringify(v)); }catch(e){} store.onChange && store.onChange(k); },
+  mem:{}
 };
 const newId = () => Date.now().toString(36) + Math.random().toString(36).slice(2,8);
 const DEFAULT_GEAR = {
@@ -273,11 +281,11 @@ function resize(){
   const k = baseScale ? proj.scale()/baseScale : 1;
   baseScale = m*0.45;
   const phone = window.innerWidth<=860;
-  const top = phone ? 64 : 0, bottom = phone ? 140 : 70;
+  const top = MODE.embed ? 0 : phone ? 64 : 0, bottom = MODE.embed ? (phone && !MODE.record ? 90 : 0) : phone ? 140 : 70;
   const avail = Math.max(120, Math.min(W, H-top-bottom));
-  if(!resize.done){ proj.scale(avail*(phone?8.5:6.4)).rotate([89.6,-44.7]); resize.done=true; }
+  if(!resize.done){ if(MODE.embed) proj.scale(Math.min(W,H)*0.43).rotate([96,-28]); else proj.scale(avail*(phone?8.5:6.4)).rotate([89.6,-44.7]); resize.done=true; }
   else proj.scale(baseScale*k);
-  proj.translate([W/2, top + (H-top-bottom)/2]);
+  proj.translate([MODE.embed && !phone && !MODE.record ? W/2 + 110 : W/2, top + (H-top-bottom)/2]);
   render(); drawBand();
 }
 let rafPending=false, quality='hi', idleTimer=null;
@@ -419,7 +427,7 @@ function draw(){
     ctx.font='12px "Atkinson Hyperlegible", system-ui, sans-serif';
     S.saved.forEach(s=>{ const p=visiblePt([s.lon,s.lat]); if(p) drawn.push(p); });
     C.CITIES.filter(c=>c[3]>=minPop).sort((a,b)=>b[3]-a[3]).forEach(([n,la,lo])=>{
-      const p=visiblePt([lo,la]); if(!p || p[0]<0||p[0]>W||p[1]<(W<600?70:0)||p[1]>H) return;
+      const p=visiblePt([lo,la]); if(!p || p[0]<0||p[0]>W||p[1]<(W<600?70:0)||p[1]>H || (p[1]<72 && p[0]<380)) return; // keep clear of the title and status line
       if(drawn.some(q=>Math.abs(q[0]-p[0])<70&&Math.abs(q[1]-p[1])<16)) return; drawn.push(p);
       ctx.beginPath(); ctx.arc(p[0],p[1],2,0,7); ctx.fillStyle=PAL.label; ctx.fill(); ctx.fillText(n,p[0]+5,p[1]); });
     if(k > 4.5) SKYPLACES.forEach(([n,la,lo])=>{ const p=visiblePt([lo,la]); if(!p) return; star(p[0],p[1],5,PAL.sky); ctx.fillStyle=PAL.sky; ctx.fillText(n,p[0]+8,p[1]); });
@@ -434,7 +442,7 @@ function draw(){
     S.drive.results.forEach((d,i)=>{ const p=visiblePt([d.lon,d.lat]); if(!p) return; star(p[0],p[1],6,PAL.drive); if(r > baseScale*5){ ctx.fillStyle=PAL.drive; ctx.fillText(d.name.length>32?d.name.slice(0,30)+'…':d.name,p[0]+9,p[1]); } });
   }
   // selection
-  const sp = visiblePt([S.sel.lon,S.sel.lat]);
+  const sp = MODE.embed ? null : visiblePt([S.sel.lon,S.sel.lat]);
   if(sp){ ctx.beginPath(); ctx.arc(sp[0],sp[1],9,0,7); ctx.strokeStyle=PAL.sel; ctx.lineWidth=1.6; ctx.stroke();
     ctx.beginPath(); ctx.moveTo(sp[0]-14,sp[1]); ctx.lineTo(sp[0]-5,sp[1]); ctx.moveTo(sp[0]+5,sp[1]); ctx.lineTo(sp[0]+14,sp[1]); ctx.moveTo(sp[0],sp[1]-14); ctx.lineTo(sp[0],sp[1]-5); ctx.moveTo(sp[0],sp[1]+5); ctx.lineTo(sp[0],sp[1]+14); ctx.stroke(); }
 }
@@ -470,7 +478,7 @@ canvas.addEventListener('pointermove', e=>{
 function endPtr(e){
   const had = pointers.has(e.pointerId); pointers.delete(e.pointerId);
   if(pointers.size<2) pinch=null;
-  if(had && e.type==='pointerup' && !moved && pointers.size===0){
+  if(had && e.type==='pointerup' && !moved && pointers.size===0 && !MODE.embed){
     const r=canvas.getBoundingClientRect(); const ll=proj.invert([e.clientX-r.left,e.clientY-r.top]);
     if(ll && !isNaN(ll[0]) && visiblePt(ll)) selectLocation({lat:ll[1],lon:ll[0],name:null},{fly:false});
   }
@@ -549,6 +557,7 @@ function selectLocation(loc, o){
   o=o||{};
   S.sel = {lat:+loc.lat, lon:+loc.lon, name:loc.name||null};
   store.set('sel', S.sel);
+  if(MODE.embed){ render(); return; }
   S.point=null; S.eval=null; S.night=0; S.showAll=false; S.savingName=null;
   if(S.sat){ S.sat.passes=null; S.sat.err=null; S.sat.key=''; }
   if(o.fly) flyTo(S.sel.lat,S.sel.lon, baseScale*12);
@@ -573,7 +582,7 @@ function evaluate(){
 }
 function gearForCalc(){ const g=Object.assign({},activeGear()); if(!g.cameraOn) delete g.camera; return g; }
 
-function renderPanel(){
+function renderPanel(){ if(MODE.embed) return;
   const b=$('#pbody');
   if(S.tab==='loc') b.innerHTML = panelLoc();
   else if(S.tab==='saved') b.innerHTML = panelSaved();

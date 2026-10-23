@@ -1,0 +1,40 @@
+name: Portfolio media
+
+# Records the turning-globe video and a full-interface screenshot from the live site
+# and commits them to media/. Run it by hand: Actions → Portfolio media → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      layer:
+        description: 'Weather layer shown on the globe'
+        default: cloud
+        type: choice
+        options: [cloud, obs, seeing, transp, high, jet]
+
+permissions:
+  contents: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: |
+          sudo apt-get update -q && sudo apt-get install -y -q ffmpeg
+          pip install playwright==1.56.0
+          python -m playwright install --with-deps chromium
+      - name: Record
+        env:
+          LAYER: ${{ github.event.inputs.layer || 'cloud' }}
+        run: python media/tools/record.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add media/starcast-*
+          git commit -m "Portfolio media: turning globe and interface screenshot" || echo "No changes"
+          git push

@@ -289,6 +289,24 @@ table.views th.r{text-align:right}
   .brand h1{font-size:18px}
 }
 @media (prefers-reduced-motion: reduce){ .panel{transition:none} }
+
+/* embed (?embed): globe and layers only, for the portfolio case study; record (?record): globe alone, for videos */
+.fulllink{display:none;text-decoration:none;color:var(--accent);border-color:var(--alert-line)}
+html.embed #app{grid-template-columns:1fr}
+html.embed .panel, html.embed .timebar, html.embed .accwrap, html.embed #themeBtn, html.embed #redBtn{display:none!important}
+html.embed .fulllink{display:inline-block}
+.fulllink .short{display:none}
+html.embed .layers{max-height:calc(100% - 84px - 16px)}
+html.embed #stage{position:relative;bottom:auto}
+html.embed .attrib{bottom:16px}
+@media (max-width: 860px){
+  html.embed #stage{position:fixed;inset:0}
+  html.embed .layers{bottom:0}
+  .fulllink .long{display:none} .fulllink .short{display:inline}
+  html.embed .attrib{bottom:96px}
+}
+html.record .top, html.record .layers, html.record .tip, html.record .attrib{display:none!important}
+html.record #globe{cursor:default}
 </style>
 
 <div id="app">
@@ -303,6 +321,7 @@ table.views th.r{text-align:right}
       <div class="accwrap"><button class="iconbtn acc" id="accountBtn" aria-haspopup="true" aria-expanded="false" hidden>Sign in</button><div class="accpop" id="accountPop" role="dialog" aria-label="Your account" hidden></div></div>
       <button class="iconbtn" id="themeBtn" title="Switch between automatic, light and dark">Theme: Auto</button>
       <button class="iconbtn" id="redBtn" aria-pressed="false" title="Red night-vision mode">Night red</button>
+      <a class="iconbtn fulllink" id="fullLink" href="./" target="_blank" rel="noopener"><span class="long">Open full Starcast</span><span class="short">Full app</span> ↗</a>
     </div>
     <div class="layers" id="layers"></div>
     <div class="timebar">
