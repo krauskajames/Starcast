@@ -2,14 +2,14 @@
 
 **An astronomy viewing-conditions globe.** Starcast puts sky-watching weather on a 3D globe the way earth.nullschool.net does for wind, gives you ClearDarkSky-style hourly forecasts for any spot, tells you what is worth pointing your own telescope or binoculars at tonight, plans the night for you, and alerts you when a good night is coming.
 
-Version 3.1 · October 2026 · Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts and sky information work anywhere.
+Version 3.4 · October 2026 · Weather map layers, spot forecasts and sky information work anywhere on Earth.
 
 ---
 
 ## What it does
 
 **On the globe**
-- **Weather layers for the US and Canada:** cloud cover, an overall observing score, seeing, transparency, high cloud, jet stream, dew risk and light pollution. Zoom in and detailed regional data loads automatically.
+- **Weather layers for the whole world:** cloud cover, an overall observing score, seeing, transparency, high cloud, jet stream and dew risk, plus light pollution for North America. Zoom in and detailed regional data loads automatically.
 - **Sky layers:** the night side, the sunlit side, the aurora (NOAA), and where on Earth each planet or the Moon can be seen.
 - **Base maps:** the simple map, OpenStreetMap, topographic, satellite, dark streets, or NASA's night-lights view of the Earth (a good real-world check on light pollution). Choose **None** under weather to read the map clearly.
 - **72-hour time slider**, light/dark/automatic theme, and a red night-vision mode.
@@ -47,7 +47,8 @@ The line under the logo shows whether the forecast is live. "Sample weather" mea
 
 | Value | Source |
 |---|---|
-| Clouds, humidity, dew point, temperature, wind, jet stream | Open-Meteo. In the US it blends NOAA's HRRR and GFS models; in Canada it uses the Canadian GEM model |
+| Weather map (whole globe) | NOAA Global Forecast System (GFS), 1° grid, every 3 hours for 72 hours, refreshed every 6 hours and published with the site |
+| Spot forecasts and zoomed-in map detail | Open-Meteo. In the US it blends NOAA's HRRR and GFS models; in Canada it uses the Canadian GEM model; elsewhere the best local models |
 | Model agreement | Open-Meteo: US (GFS), European (ECMWF) and Canadian (GEM) cloud forecasts compared hour by hour |
 | Haze (aerosol optical depth) | Copernicus CAMS, through Open-Meteo |
 | Seeing and transparency (1–5) | Starcast estimates from jet-stream winds, humidity, high cloud and haze |
@@ -123,7 +124,7 @@ Alert settings live only in your GitHub secret.
 
 ## Hosting
 
-This repository is set up for GitHub Pages: go to **Settings → Pages** and deploy from the `main` branch, `/ (root)` folder. The site is served at https://krauskagis.com/Starcast/ because the portfolio site's custom domain applies to all GitHub Pages sites on this account. It updates a minute or two after each commit. "Install on your phone" and "Use my location" need the hosted site, since browsers allow them only over https.
+The site is published to GitHub Pages by a GitHub Actions workflow (`.github/workflows/site.yml`), so the worldwide weather files can be added without committing them. One-time setup: **Settings → Pages → Build and deployment → Source: GitHub Actions**. The workflow runs after every commit to `main` (reusing the weather already online) and every 6 hours (with the newest NOAA run). The site is served at https://krauskagis.com/Starcast/ because the portfolio site's custom domain applies to all GitHub Pages sites on this account. "Install on your phone" and "Use my location" need the hosted site, since browsers allow them only over https.
 
 ## Files
 
@@ -138,6 +139,8 @@ This repository is set up for GitHub Pages: go to **Settings → Pages** and dep
 | `alerts/check.mjs` | The alert job: fetches forecasts and sends notifications |
 | `alerts/core.js` | Copy of the engine for the alert job, made by the build |
 | `.github/workflows/alerts.yml` | The schedule that runs the alert job |
+| `.github/workflows/site.yml` | Publishes the site with fresh worldwide weather every 6 hours |
+| `pipeline/gfs.py` | Downloads NOAA GFS forecasts and writes the compact weather files the map reads (`pipeline/test/` has an offline test with a fake NOAA run) |
 | `supabase/schema.sql` | Database tables and security rules for accounts (run once in Supabase) |
 | `SETUP-ACCOUNTS.md` | Step-by-step guide to switching on Google sign-in |
 | `CLAUDE.md` | Project notes for Claude Code |
@@ -148,7 +151,7 @@ To change the app, edit the files in `src/` and run `npm run build` (needs Node.
 
 ## Known limits
 
-- Weather map layers cover the US (including Alaska) and Canada; spot forecasts work worldwide.
+- Outside North America the map uses the 1° worldwide grid until you zoom in; light pollution covers North America only.
 - Seeing, transparency and light pollution are estimates still being checked.
 - The aurora map from NOAA covers only the next hour or so; further ahead, the aurora layer is drawn from the Kp forecast.
 - Driving times come from a free public routing service and may be missing at busy times; park hours appear only where OpenStreetMap lists them.
@@ -158,6 +161,7 @@ To change the app, edit the files in `src/` and run `npm run build` (needs Node.
 
 ## Credits
 
+- Worldwide map forecast from the NOAA [Global Forecast System](https://www.ncei.noaa.gov/products/weather-climate-models/global-forecast) (public domain).
 - Weather data and place search by [Open-Meteo.com](https://open-meteo.com/), licensed CC BY 4.0. Free use is for non-commercial purposes.
 - Aerosol forecasts from the Copernicus Atmosphere Monitoring Service (CAMS).
 - Aurora and Kp forecasts from the [NOAA Space Weather Prediction Center](https://www.swpc.noaa.gov/).

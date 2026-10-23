@@ -1,0 +1,55 @@
+name: Starcast site and global weather
+
+# Publishes the site to GitHub Pages together with fresh worldwide weather (NOAA GFS).
+# One-time setup: Settings → Pages → Build and deployment → Source: "GitHub Actions".
+on:
+  schedule:
+    - cron: '20 4,10,16,22 * * *'   # about 4 h after each GFS run (00, 06, 12, 18 UTC) is complete
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  PUBLISHED: https://krauskagis.com/Starcast/data/wx
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install eccodes==2.50.0 numpy
+      - name: Global weather data
+        # A push only republishes the site, so it copies the weather already online
+        # (and builds fresh data only if that fails). Scheduled runs build the newest GFS run.
+        run: python pipeline/gfs.py --out _site/data/wx --reuse-from "$PUBLISHED" ${{ github.event_name == 'push' && '--reuse-only' || '' }}
+      - name: Site files
+        run: |
+          cp index.html manifest.webmanifest sw.js icon-192.png icon-512.png privacy.html terms.html legal.css _site/
+          touch _site/.nojekyll
+          du -sh _site _site/data/wx
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

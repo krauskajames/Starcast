@@ -1668,7 +1668,7 @@ const rgb = c => c ? `rgb(${c[0]|0},${c[1]|0},${c[2]|0})` : 'transparent';
 
 /* ---------------- layers ---------------- */
 const LAYERS = [
-  {id:'cloud', name:'Cloud cover', key:'cloud', sc:SC.cloud, ticks:['Clear','50%','Overcast'], dom:[0,100], note:'Total cloud from the model blend. Dark navy is clear sky; teal and sage are partly cloudy; pale is overcast.'},
+  {id:'cloud', name:'Cloud cover', key:'cloud', sc:SC.cloud, ticks:['Clear','50%','Overcast'], dom:[0,100], note:'Total cloud cover. Dark navy is clear sky; teal and sage are partly cloudy; pale is overcast.'},
   {id:'obs', name:'Observing', key:'obs', sc:SC.obs, ticks:['Poor','Fair','Great'], dom:[0,100], note:'Clear sky, darkness, steady air and transparency combined into one score. Yellow-green is best.'},
   {id:'seeing', name:'Seeing', key:'seeing', sc:SC.q5, ticks:['1 bad','3 average','5 steady'], dom:[1,5], note:'Estimated steadiness of the air. Matters most for planets, the Moon and double stars.'},
   {id:'transp', name:'Transparency', key:'transp', sc:SC.q5, ticks:['1 hazy','3 average','5 crisp'], dom:[1,5], note:'Estimated clarity from high cloud and moisture. Matters most for galaxies and nebulae.'},
@@ -1705,7 +1705,7 @@ function buildLayers(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const n=12, grad= L.key==='none' ? 'transparent' : Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
   $('#layers').innerHTML = `
-    <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
+    <div class="lgroup"><h3>Weather${GL.ready?'':' · US & Canada'}</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
     <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p>
       ${L.key!=='none'?`<label class="opac"><span>Opacity</span><input type="range" id="wxOpacity" min="20" max="100" step="5" value="${Math.round(S.wxOpacity*100)}" aria-label="Weather layer opacity"><span class="mono" id="wxOpacityV">${Math.round(S.wxOpacity*100)}%</span></label>`:''}</div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
@@ -1852,10 +1852,11 @@ function draw(){
     ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas,0,0,ow*step,oh*step); ctx.restore();
   }
   const drawTopOverlay = () => { if(!anyTop) return; ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas2,0,0,ow*step,oh*step); ctx.restore(); };
-  // weather raster over North America (US + Canada), clipped to land
+  // weather raster: the whole globe with the worldwide forecast; North American land on the fallback grid
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const k = r/baseScale;
-  const bb = path.bounds(NA_MASK);
+  const world = GL.ready && L.key!=='lp', mask = world ? {type:'Sphere'} : NA_MASK;
+  const bb = path.bounds(mask);
   if(L.key!=='none' && (S.grid || L.key==='lp') && isFinite(bb[0][0])){
     const bx0=Math.max(0,bb[0][0]-2), by0=Math.max(0,bb[0][1]-2), bx1=Math.min(W,bb[1][0]+2), by1=Math.min(H,bb[1][1]+2);
     if(bx1>bx0+2 && by1>by0+2){
@@ -1868,13 +1869,13 @@ function draw(){
       const wxAlpha = Math.round(255*S.wxOpacity*(bmOn?0.8:1));
       for(let y=0;y<wh;y++) for(let x=0;x<ww;x++){
         const ll=proj.invert([bx0+x*ws+ws/2, by0+y*ws+ws/2]); if(!ll||isNaN(ll[0])) continue;
-        if(ll[1]<23||ll[1]>85||ll[0]<-172||ll[0]>-50) continue;
+        if(!world && (ll[1]<23||ll[1]>85||ll[0]<-172||ll[0]>-50)) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
         const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=9); const c=L.sc(v); if(!c) continue;
         const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=wxAlpha;
       }
       wxCtx.putImageData(wimg,0,0);
-      ctx.save(); ctx.beginPath(); path(NA_MASK); ctx.clip(); ctx.imageSmoothingEnabled=true;
+      ctx.save(); ctx.beginPath(); path(mask); ctx.clip(); ctx.imageSmoothingEnabled=true;
       ctx.drawImage(wxCanvas, bx0, by0, ww*ws, wh*ws); ctx.restore();
     }
   }
@@ -1970,7 +1971,7 @@ function hoverTip(e){
   const tip=$('#tip'); if(!S.grid || e.pointerType==='touch'){ tip.hidden=true; return; }
   const r=canvas.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
   const ll=proj.invert([x,y]); if(!ll||isNaN(ll[0])||!visiblePt(ll)){ tip.hidden=true; return; }
-  if(!inNA(ll[1],ll[0])){ tip.hidden=true; return; }
+  if(!GL.ready && !inNA(ll[1],ll[0])){ tip.hidden=true; return; }
   const L=LAYERS.find(l=>l.id===S.layer); const sky=skyNow();
   const v=layerVal(L,S.ti,ll[1],ll[0],C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g));
   if(isNaN(v)){ tip.hidden=true; return; }
@@ -2042,7 +2043,7 @@ function selectLocation(loc, o){
   syncTabs(); renderPanel(); drawBand(); setTime(S.ti); render();
   loadPoint(S.sel.lat,S.sel.lon);
   loadConfidence(S.sel.lat,S.sel.lon);
-  if(WX.coarse && S.sel.lat>23 && S.sel.lat<73) loadTile(tileSpec(S.sel.lat,S.sel.lon)).then(()=>{ drawBand(); render(); });
+  if(S.grid && Math.abs(S.sel.lat)<80) loadTile(tileSpec(S.sel.lat,S.sel.lon)).then(()=>{ drawBand(); render(); });
 }
 function syncTabs(){ document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab)); }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ S.tab=t.dataset.tab; syncTabs(); renderPanel(); $('#pbody').scrollTop=0; if(window.innerWidth<=860) setSheet('mid'); });
@@ -2237,7 +2238,7 @@ function updateNowCards(){
 
 /* ---------------- where to go tonight ---------------- */
 S.drive = { radius: store.get('driveRadius', 60), busy:false, results:null, err:null, home:null, from:null };
-const onLand = (lat,lon) => inNA(lat,lon);
+const onLand = (lat,lon) => inLand(lat,lon);
 function nightDarkHours(n, ev){ const h=[]; for(let i=n.start;i<n.end;i++) if(ev.per[i].sunAlt<-15) h.push(i); return h; }
 function siteStats(lat, lon, hrs){
   const sqm = lpVal(lat,lon); const lp = C.lightPollution(lat,lon);
@@ -2357,7 +2358,7 @@ function panelSaved(){
   h += logHTML();
   h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
 
   return h;
 }
@@ -2522,7 +2523,8 @@ $('#handle').onclick=()=>{ const p=$('#panel'); setSheet(p.classList.contains('b
 $('#redBtn').onclick=()=>{ S.red=!S.red; $('#red').hidden=!S.red; $('#redBtn').setAttribute('aria-pressed',S.red); };
 
 /* ---- 20-weather.js ---- */
-/* Weather data for North America (contiguous US, Alaska, Canada).
+/* Open-Meteo weather: spot forecasts, zoomed-in detail tiles anywhere on land, and the
+   North American grid that stands in when the worldwide files (22-global.js) can't load.
    Open-Meteo's free tier allows 600 calls a minute, 5,000 an hour and 10,000 a day, and a
    request for many places counts once per place. So Starcast keeps a running budget below
    those limits, loads a light continental grid first, adds detail only for the area you
@@ -2606,7 +2608,7 @@ function specPoints(spec){
   const pts=[], idx=new Int32Array(spec.nLat*spec.nLon).fill(-1);
   for(let i=0;i<spec.nLat;i++) for(let j=0;j<spec.nLon;j++){
     const lat = spec.lat0+i*spec.dLat, lon = spec.lon0+j*spec.dLon;
-    if(lat>84 || !nearNA(lat,lon,spec.dLat,spec.dLon)) continue;
+    if(Math.abs(lat)>84 || !(spec.id===COARSE.id ? nearNA : nearLand)(lat,lon,spec.dLat,spec.dLon)) continue;
     idx[i*spec.nLon+j]=pts.length; pts.push([+lat.toFixed(3), +lon.toFixed(3)]);
   }
   return {pts, idx};
@@ -2661,6 +2663,7 @@ function usable(L){ return L && (L.empty || (!(L.todo&&L.todo.length) && Date.no
 let coarseRetry=null;
 async function loadCoarse(force){
   clearTimeout(coarseRetry);
+  if(GL.ready) return; // only a fallback for the worldwide files
   if(!force && !WX.coarse){ const c=await cacheGet(COARSE.id); if(usable(c)){ WX.coarse=c; WX.at=c.at; WX.error=null; afterCoarse(); return; } }
   setStatus('loading','Loading forecast…');
   const L = (WX.coarse && WX.coarse.todo && WX.coarse.todo.length && !force) ? Object.assign(WX.coarse, specPoints(COARSE)) : newLayer(COARSE);
@@ -2680,12 +2683,14 @@ async function loadCoarse(force){
       setStatus('demo', 'Can’t reach the forecast service right now');
       coarseRetry=setTimeout(()=>loadCoarse(false), 5*60e3);
     }
+    if(GL.ready) return;
     S.grid = WX.coarse && WX.coarse.nT ? WX.coarse : null;
     S.eval=null; render(); drawBand();
     if(S.tab==='loc') renderPanel();
   }
 }
 function afterCoarse(){
+  if(GL.ready) return; // the worldwide files arrived in the meantime
   S.grid = WX.coarse;
   setStatus('live', DEMO ? 'Sample weather (demo mode)' : `Live forecast · updated ${fmtTime.format(new Date(WX.at))}`);
   S.eval=null; render(); drawBand(); selectLocation(S.sel, {fly:false, keepView:true});
@@ -2717,12 +2722,12 @@ async function ensureTilesAround(lat, lon, km){
 let tileTimer=null;
 function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 700); }
 async function loadVisibleTiles(){
-  if(!WX.coarse || proj.scale() < baseScale*8) return;
+  if(!S.grid || proj.scale() < baseScale*8) return;
   const c=proj.invert([W/2,H/2]); if(!c) return;
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
     const ll=proj.invert([W*j/6, H*i/6]); if(!ll||isNaN(ll[0])||!visiblePt(ll)) continue;
-    if(ll[1]<24||ll[1]>84||ll[0]<-170||ll[0]>-50) continue;
+    if(Math.abs(ll[1])>84) continue;
     const sp=tileSpec(ll[1],ll[0]); if(!want.has(sp.id)) want.set(sp.id,{sp,d:d3.geoDistance(ll,c)});
   }
   const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,4).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
@@ -2776,7 +2781,8 @@ function gridVal(key, t, lat, lon, detail){
   return PCT.has(key) ? Math.min(100, Math.max(0, v)) : v; // blending can overshoot 100% by a rounding hair
 }
 function gridValRaw(key, t, lat, lon, detail){
-  const base = layerValue(WX.coarse,key,t,lat,lon);
+  let base = GL.ready ? globalValue(key,t,lat,lon) : NaN;   // worldwide GFS first
+  if(isNaN(base)) base = layerValue(WX.coarse,key,t,lat,lon);
   if(detail===false) return base;
   const tile = WX.tiles.get(tileSpec(lat,lon).id);
   if(!tileReady(tile)) return base;
@@ -2788,7 +2794,7 @@ function gridValRaw(key, t, lat, lon, detail){
 function setStatus(kind, text){
   const el = $('#status'); el.className = 'status '+kind;
   el.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>` + (kind==='live' ? ` <button id="refreshBtn" type="button">Refresh</button>` : '');
-  const b = $('#refreshBtn'); if(b) b.onclick = () => { WX.tiles.clear(); loadCoarse(true); };
+  const b = $('#refreshBtn'); if(b) b.onclick = () => refreshWeather(true);
 }
 
 /* --- light pollution: cached tiles of the city-glow model --- */
@@ -2805,6 +2811,168 @@ function lpVal(lat, lon, res){
   const t=lpTile(lat,lon,res||0.05), fi=(lat-t.la)/t.res, fj=(lon-t.lo)/t.res;
   const i=Math.min(Math.floor(fi),t.n-2), j=Math.min(Math.floor(fj),t.n-2), di=fi-i, dj=fj-j, a=t.a, n=t.n;
   return (a[i*n+j]*(1-dj)+a[i*n+j+1]*dj)*(1-di) + (a[(i+1)*n+j]*(1-dj)+a[(i+1)*n+j+1]*dj)*di;
+}
+
+/* ---- 22-global.js ---- */
+/* Worldwide weather: NOAA GFS forecasts published with the site (data/wx/), refreshed
+   every 6 hours by .github/workflows/site.yml (pipeline/gfs.py). One file per 3-hour
+   step, 1° grid, one byte per value. This is the base layer everywhere; Open-Meteo still
+   supplies spot forecasts and the zoomed-in detail tiles, which blend in on top.
+   If the files can't be loaded (opened from disk, old browser), the North American
+   Open-Meteo grid is used instead. */
+const GLOBAL_BASE = 'data/wx/';
+const GL = { man:null, raw:new Map(), dec:new Map(), ready:false, failed:false, job:null, checked:0 };
+const GL_KEEP = 6; // decoded steps kept in memory
+
+async function glFetchStep(man, name){
+  const key = 'gfs:'+name;
+  const n = man.grid.nLat*man.grid.nLon*man.channels.length;
+  const hit = await cacheGet(key);
+  if(hit && hit.b && hit.b.length===n) return hit.b;
+  const r = await fetch(GLOBAL_BASE+name);
+  if(!r.ok) throw new Error('HTTP '+r.status);
+  let buf = new Uint8Array(await r.arrayBuffer());
+  if(buf[0]===0x1f && buf[1]===0x8b){ // gzip (unless the server already unpacked it)
+    const st = new Blob([buf]).stream().pipeThrough(new DecompressionStream('gzip'));
+    buf = new Uint8Array(await new Response(st).arrayBuffer());
+  }
+  if(buf.length !== n) throw new Error('unexpected size');
+  cachePut(key, {b:buf});
+  return buf;
+}
+async function glPrune(cycle){
+  const db=await idb(); if(!db) return;
+  try{ const st=db.transaction('wx','readwrite').objectStore('wx'), q=st.getAllKeys();
+    q.onsuccess=()=>q.result.forEach(k=>{ if(typeof k==='string' && k.startsWith('gfs:') && !k.startsWith('gfs:'+cycle+'/')) st.delete(k); }); }catch(e){}
+}
+// hours after the run's start time for map hour t
+const glHours = (t, man) => (S.times[t] - (man||GL.man).t0)/3600;
+function glCovers(m){ // does the run reach far enough ahead to be the map's base?
+  if(!m) return false;
+  const end = m.t0 + m.hours[m.hours.length-1]*3600;
+  return m.t0 <= S.times[0] + 3*3600 && end >= S.times[0] + 48*3600;
+}
+function loadGlobal(force){
+  if(GL.job) return GL.job;
+  if(typeof DecompressionStream==='undefined' || DEMO){ GL.failed=true; return Promise.resolve(false); }
+  GL.job = loadGlobalNow(force).finally(()=>{ GL.job=null; });
+  return GL.job;
+}
+async function loadGlobalNow(force){
+  try{
+    const r = await fetch(GLOBAL_BASE+'manifest.json', {cache:'no-cache'});
+    if(!r.ok) throw new Error('HTTP '+r.status);
+    const man = await r.json();
+    GL.checked = Date.now();
+    if(!man || man.v!==1 || !man.files || !man.grid || !man.channels) throw new Error('bad manifest');
+    if(!glCovers(man)) throw new Error('published run is out of date');
+    const fresh = !GL.man || GL.man.cycle !== man.cycle;
+    const raw = fresh ? new Map() : GL.raw;
+    let live = !fresh;
+    // the steps around now first, so the map shows weather quickly; the rest follow.
+    // A new run replaces the old one only once its first steps are in, so the map never goes blank.
+    const now = glHours(0, man) / (man.dt/3600), first = [Math.floor(now), Math.min(Math.ceil(now), man.files.length-1)];
+    const order = man.files.map((f,i)=>i).sort((a,b)=>Math.abs(a-now-0.5)-Math.abs(b-now-0.5));
+    for(const i of order){
+      if(man.t0 + man.hours[i]*3600 < S.times[0] - man.dt) continue; // already past
+      if(!raw.has(i)) raw.set(i, await glFetchStep(man, man.files[i]));
+      if(!live && first.every(j=>raw.has(j))){
+        live = true;
+        GL.man = man; GL.raw = raw; GL.dec = new Map(); glPrune(man.cycle);
+        if(!GL.ready){ GL.ready = true; afterGlobal(); } else { afterGlobal(); }
+      } else if(live && glShowing(man, i)) render();
+    }
+    GL.failed = false;
+  }catch(e){
+    console.warn('Worldwide forecast not available:', e.message);
+    if(!GL.ready) GL.failed = true;
+  }
+  if(GL.ready){ S.eval=null; render(); drawBand(); if(S.tab==='loc') renderPanel(); }
+  return GL.ready;
+}
+// is step i one of the two the map is showing right now?
+function glShowing(man, i){ const x=glHours(S.ti, man)/(man.dt/3600); return i===Math.floor(x) || i===Math.ceil(x); }
+function afterGlobal(){
+  S.grid = GL; buildLayers();
+  WX.at = Date.parse(GL.man.made) || Date.now(); WX.error = null;
+  clearTimeout(coarseRetry);
+  setStatus('live', `Live forecast · NOAA GFS, updated ${fmtTime.format(new Date(WX.at))}`);
+  S.eval=null; render(); drawBand(); selectLocation(S.sel, {fly:false, keepView:true});
+  scheduleTiles();
+}
+// all channels of one step as numbers (NaN = missing), plus the values Starcast derives
+function glStep(i){
+  let d = GL.dec.get(i); if(d) return d;
+  const b = GL.raw.get(i); if(!b) return null;
+  const m = GL.man, n = m.grid.nLat*m.grid.nLon; d = {};
+  m.channels.forEach((c,k)=>{ const a=new Float32Array(n); for(let p=0;p<n;p++){ const v=b[k*n+p]; a[p] = v===255 ? NaN : c.offset + v*c.scale; } d[c.key]=a; });
+  d.td = new Float32Array(n); d.seeing = new Float32Array(n); d.transp = new Float32Array(n);
+  for(let p=0;p<n;p++){
+    d.td[p] = d.temp[p] - d.spread[p];
+    d.seeing[p] = C.estSeeing(d.j250[p], d.w500[p], d.w10[p]);
+    d.transp[p] = C.estTransparency(d.hcloud[p], d.rh[p], null);
+  }
+  GL.dec.set(i, d);
+  if(GL.dec.size > GL_KEEP) GL.dec.delete(GL.dec.keys().next().value);
+  return d;
+}
+// smooth value at one step: Catmull-Rom over 4×4 points, wrapping around in longitude
+function glSpace(a, lat, lon){
+  const g = GL.man.grid;
+  const fi = (lat-g.lat0)/g.d, fj = (((lon-g.lon0)%360)+360)%360/g.d;
+  const i = Math.min(Math.floor(fi), g.nLat-2), j = Math.floor(fj), di = fi-i, dj = fj-j;
+  const at = (ii,jj) => a[Math.max(0,Math.min(g.nLat-1,ii))*g.nLon + ((jj%g.nLon)+g.nLon)%g.nLon];
+  const rows=[]; let ok=true;
+  for(let m=-1;m<=2;m++){ const r=[at(i+m,j-1),at(i+m,j),at(i+m,j+1),at(i+m,j+2)]; if(r.some(isNaN)){ ok=false; break; } rows.push(cr(r[0],r[1],r[2],r[3],dj)); }
+  const c00=at(i,j), c01=at(i,j+1), c10=at(i+1,j), c11=at(i+1,j+1);
+  if(ok){
+    const v=cr(rows[0],rows[1],rows[2],rows[3],di);
+    return Math.max(Math.min(c00,c01,c10,c11), Math.min(Math.max(c00,c01,c10,c11), v));
+  }
+  let s=0,w=0; [[c00,(1-di)*(1-dj)],[c01,(1-di)*dj],[c10,di*(1-dj)],[c11,di*dj]].forEach(([v,wt])=>{ if(!isNaN(v)&&wt>0){ s+=v*wt; w+=wt; } });
+  return w>0 ? s/w : NaN;
+}
+// value for map hour t, interpolated between the 3-hourly steps
+function globalValue(key, t, lat, lon){
+  if(!GL.ready || !GL.man || t<0 || t>=S.times.length) return NaN;
+  const x = glHours(t) / (GL.man.dt/3600);
+  if(x < 0 || x > GL.man.files.length-1) return NaN;
+  const i0 = Math.floor(x), i1 = Math.min(i0+1, GL.man.files.length-1), f = x-i0;
+  const d0 = glStep(i0); if(!d0 || !d0[key]) return NaN;
+  const v0 = glSpace(d0[key], lat, lon);
+  if(f < 1e-6 || i1===i0) return v0;
+  const d1 = glStep(i1); if(!d1) return v0;
+  const v1 = glSpace(d1[key], lat, lon);
+  return isNaN(v1) ? v0 : isNaN(v0) ? v1 : v0 + (v1-v0)*f;
+}
+// start-up and hourly refresh: worldwide files first, the North American grid only as a fallback
+async function refreshWeather(force){
+  if(force) WX.tiles.clear();
+  const ok = await loadGlobal(force);
+  if(!ok) loadCoarse(force);
+  else scheduleTiles();
+}
+
+/* --- land mask for the whole world (detail tiles skip open ocean to save requests) --- */
+// A 0.25° land raster drawn once from the 1:50m land polygons (a lookup is then instant)
+let LAND_MASK = null;
+function landMask(){
+  if(LAND_MASK) return LAND_MASK;
+  const w=1440, h=720, cv=document.createElement('canvas'); cv.width=w; cv.height=h;
+  const cx=cv.getContext('2d', {willReadFrequently:true});
+  const pr=d3.geoEquirectangular().scale(w/(2*Math.PI)).translate([w/2,h/2]);
+  cx.fillStyle='#000'; cx.beginPath(); d3.geoPath(pr, cx)(land); cx.fill();
+  const px=cx.getImageData(0,0,w,h).data, m=new Uint8Array(w*h);
+  for(let i=0;i<m.length;i++) m[i]=px[i*4+3]>100?1:0;
+  LAND_MASK={w,h,m}; return LAND_MASK;
+}
+function inLand(lat, lon){
+  if(inNA(lat,lon)) return true; // the detailed US states and Canada outline
+  const L=landMask(), x=Math.floor(((((lon+180)%360)+360)%360)/360*L.w), y=Math.floor((90-lat)/180*L.h);
+  return !!L.m[Math.max(0,Math.min(L.h-1,y))*L.w + Math.min(L.w-1,x)];
+}
+function nearLand(lat, lon, dLat, dLon){
+  return inLand(lat,lon) || inLand(lat+dLat*.6,lon) || inLand(lat-dLat*.6,lon) || inLand(lat,lon+dLon*.6) || inLand(lat,lon-dLon*.6);
 }
 
 /* ---- 25-basemap.js ---- */
@@ -3870,11 +4038,12 @@ buildLayers(); showAttribution(); resize();
 proj.rotate([-S.sel.lon, -S.sel.lat, 0]);
 setTime(nowIndex());
 renderPanel();
-loadCoarse(false);
+refreshWeather(false);
 loadAurora();
-setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; loadCoarse(false); } }, 5*60e3);
+setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; refreshWeather(false); } }, 5*60e3);
 registerSW();
 initAccount();
+if(/[?&]debug\b/.test(location.search)) window.__sc = { S, GL, WX, gridVal, globalValue, proj, render, inLand }; // for automated tests
 
 })();
 </script>

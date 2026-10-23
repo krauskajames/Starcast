@@ -181,7 +181,7 @@ const rgb = c => c ? `rgb(${c[0]|0},${c[1]|0},${c[2]|0})` : 'transparent';
 
 /* ---------------- layers ---------------- */
 const LAYERS = [
-  {id:'cloud', name:'Cloud cover', key:'cloud', sc:SC.cloud, ticks:['Clear','50%','Overcast'], dom:[0,100], note:'Total cloud from the model blend. Dark navy is clear sky; teal and sage are partly cloudy; pale is overcast.'},
+  {id:'cloud', name:'Cloud cover', key:'cloud', sc:SC.cloud, ticks:['Clear','50%','Overcast'], dom:[0,100], note:'Total cloud cover. Dark navy is clear sky; teal and sage are partly cloudy; pale is overcast.'},
   {id:'obs', name:'Observing', key:'obs', sc:SC.obs, ticks:['Poor','Fair','Great'], dom:[0,100], note:'Clear sky, darkness, steady air and transparency combined into one score. Yellow-green is best.'},
   {id:'seeing', name:'Seeing', key:'seeing', sc:SC.q5, ticks:['1 bad','3 average','5 steady'], dom:[1,5], note:'Estimated steadiness of the air. Matters most for planets, the Moon and double stars.'},
   {id:'transp', name:'Transparency', key:'transp', sc:SC.q5, ticks:['1 hazy','3 average','5 crisp'], dom:[1,5], note:'Estimated clarity from high cloud and moisture. Matters most for galaxies and nebulae.'},
@@ -218,7 +218,7 @@ function buildLayers(){
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const n=12, grad= L.key==='none' ? 'transparent' : Array.from({length:n},(_,i)=>rgb(L.sc(L.dom[0]+(L.dom[1]-L.dom[0])*i/(n-1)))).join(',');
   $('#layers').innerHTML = `
-    <div class="lgroup"><h3>Weather · US & Canada</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
+    <div class="lgroup"><h3>Weather${GL.ready?'':' · US & Canada'}</h3><div class="chips">${LAYERS.map(l=>`<button class="chip radio" data-layer="${l.id}" aria-pressed="${l.id===S.layer}"><span class="sw" style="background:${l.key==='none'?'transparent':rgb(l.sc(l.dom[0]+(l.dom[1]-l.dom[0])*.2))}"></span>${l.name}</button>`).join('')}</div></div>
     <div class="lgroup legend"><div class="bar" style="background:linear-gradient(90deg,${grad})"></div><div class="ticks">${L.ticks.map(t=>`<span>${t}</span>`).join('')}</div><p class="layer-note">${L.note}</p>
       ${L.key!=='none'?`<label class="opac"><span>Opacity</span><input type="range" id="wxOpacity" min="20" max="100" step="5" value="${Math.round(S.wxOpacity*100)}" aria-label="Weather layer opacity"><span class="mono" id="wxOpacityV">${Math.round(S.wxOpacity*100)}%</span></label>`:''}</div>
     <div class="lgroup"><h3>Sky over the globe</h3><div class="chips">${OVERLAYS.map(o=>`<button class="chip" data-ov="${o.id}" aria-pressed="${!!S.ov[o.id]}"><span class="sw" style="background:${rgb(o.id==='night'?[60,70,110]:o.col)}"></span>${o.name}${o.id==='aurora'?'<span class="k">NOAA</span>':o.id!=='night'&&o.id!=='Moon'&&o.id!=='Sun'?'<span class="k">where visible</span>':''}</button>`).join('')}</div></div>`;
@@ -365,10 +365,11 @@ function draw(){
     ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas,0,0,ow*step,oh*step); ctx.restore();
   }
   const drawTopOverlay = () => { if(!anyTop) return; ctx.save(); ctx.beginPath(); path({type:'Sphere'}); ctx.clip(); ctx.imageSmoothingEnabled=true; ctx.drawImage(ovCanvas2,0,0,ow*step,oh*step); ctx.restore(); };
-  // weather raster over North America (US + Canada), clipped to land
+  // weather raster: the whole globe with the worldwide forecast; North American land on the fallback grid
   const L = LAYERS.find(l=>l.id===S.layer)||LAYERS[0];
   const k = r/baseScale;
-  const bb = path.bounds(NA_MASK);
+  const world = GL.ready && L.key!=='lp', mask = world ? {type:'Sphere'} : NA_MASK;
+  const bb = path.bounds(mask);
   if(L.key!=='none' && (S.grid || L.key==='lp') && isFinite(bb[0][0])){
     const bx0=Math.max(0,bb[0][0]-2), by0=Math.max(0,bb[0][1]-2), bx1=Math.min(W,bb[1][0]+2), by1=Math.min(H,bb[1][1]+2);
     if(bx1>bx0+2 && by1>by0+2){
@@ -381,13 +382,13 @@ function draw(){
       const wxAlpha = Math.round(255*S.wxOpacity*(bmOn?0.8:1));
       for(let y=0;y<wh;y++) for(let x=0;x<ww;x++){
         const ll=proj.invert([bx0+x*ws+ws/2, by0+y*ws+ws/2]); if(!ll||isNaN(ll[0])) continue;
-        if(ll[1]<23||ll[1]>85||ll[0]<-172||ll[0]>-50) continue;
+        if(!world && (ll[1]<23||ll[1]>85||ll[0]<-172||ll[0]>-50)) continue;
         const sunAlt = L.key==='obs' ? C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g) : 0;
         const v = L.key==='lp' ? lpVal(ll[1],ll[0],lpRes) : layerVal(L,S.ti,ll[1],ll[0],sunAlt, k>=9); const c=L.sc(v); if(!c) continue;
         const kk=(y*ww+x)*4; wp[kk]=c[0]; wp[kk+1]=c[1]; wp[kk+2]=c[2]; wp[kk+3]=wxAlpha;
       }
       wxCtx.putImageData(wimg,0,0);
-      ctx.save(); ctx.beginPath(); path(NA_MASK); ctx.clip(); ctx.imageSmoothingEnabled=true;
+      ctx.save(); ctx.beginPath(); path(mask); ctx.clip(); ctx.imageSmoothingEnabled=true;
       ctx.drawImage(wxCanvas, bx0, by0, ww*ws, wh*ws); ctx.restore();
     }
   }
@@ -483,7 +484,7 @@ function hoverTip(e){
   const tip=$('#tip'); if(!S.grid || e.pointerType==='touch'){ tip.hidden=true; return; }
   const r=canvas.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
   const ll=proj.invert([x,y]); if(!ll||isNaN(ll[0])||!visiblePt(ll)){ tip.hidden=true; return; }
-  if(!inNA(ll[1],ll[0])){ tip.hidden=true; return; }
+  if(!GL.ready && !inNA(ll[1],ll[0])){ tip.hidden=true; return; }
   const L=LAYERS.find(l=>l.id===S.layer); const sky=skyNow();
   const v=layerVal(L,S.ti,ll[1],ll[0],C.altFast(ll[1],ll[0],sky.sun.ra,sky.sun.dec,sky.g));
   if(isNaN(v)){ tip.hidden=true; return; }
@@ -555,7 +556,7 @@ function selectLocation(loc, o){
   syncTabs(); renderPanel(); drawBand(); setTime(S.ti); render();
   loadPoint(S.sel.lat,S.sel.lon);
   loadConfidence(S.sel.lat,S.sel.lon);
-  if(WX.coarse && S.sel.lat>23 && S.sel.lat<73) loadTile(tileSpec(S.sel.lat,S.sel.lon)).then(()=>{ drawBand(); render(); });
+  if(S.grid && Math.abs(S.sel.lat)<80) loadTile(tileSpec(S.sel.lat,S.sel.lon)).then(()=>{ drawBand(); render(); });
 }
 function syncTabs(){ document.querySelectorAll('.tab').forEach(t=>t.setAttribute('aria-selected', t.dataset.tab===S.tab)); }
 document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{ S.tab=t.dataset.tab; syncTabs(); renderPanel(); $('#pbody').scrollTop=0; if(window.innerWidth<=860) setSheet('mid'); });
@@ -750,7 +751,7 @@ function updateNowCards(){
 
 /* ---------------- where to go tonight ---------------- */
 S.drive = { radius: store.get('driveRadius', 60), busy:false, results:null, err:null, home:null, from:null };
-const onLand = (lat,lon) => inNA(lat,lon);
+const onLand = (lat,lon) => inLand(lat,lon);
 function nightDarkHours(n, ev){ const h=[]; for(let i=n.start;i<n.end;i++) if(ev.per[i].sunAlt<-15) h.push(i); return h; }
 function siteStats(lat, lon, hrs){
   const sqm = lpVal(lat,lon); const lp = C.lightPollution(lat,lon);
@@ -870,7 +871,7 @@ function panelSaved(){
   h += logHTML();
   h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
 
   return h;
 }

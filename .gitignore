@@ -1,3 +1,6 @@
 node_modules
 *.log
 alerts.json
+data/
+__pycache__/
+_site/

@@ -1,4 +1,5 @@
-/* Weather data for North America (contiguous US, Alaska, Canada).
+/* Open-Meteo weather: spot forecasts, zoomed-in detail tiles anywhere on land, and the
+   North American grid that stands in when the worldwide files (22-global.js) can't load.
    Open-Meteo's free tier allows 600 calls a minute, 5,000 an hour and 10,000 a day, and a
    request for many places counts once per place. So Starcast keeps a running budget below
    those limits, loads a light continental grid first, adds detail only for the area you
@@ -82,7 +83,7 @@ function specPoints(spec){
   const pts=[], idx=new Int32Array(spec.nLat*spec.nLon).fill(-1);
   for(let i=0;i<spec.nLat;i++) for(let j=0;j<spec.nLon;j++){
     const lat = spec.lat0+i*spec.dLat, lon = spec.lon0+j*spec.dLon;
-    if(lat>84 || !nearNA(lat,lon,spec.dLat,spec.dLon)) continue;
+    if(Math.abs(lat)>84 || !(spec.id===COARSE.id ? nearNA : nearLand)(lat,lon,spec.dLat,spec.dLon)) continue;
     idx[i*spec.nLon+j]=pts.length; pts.push([+lat.toFixed(3), +lon.toFixed(3)]);
   }
   return {pts, idx};
@@ -137,6 +138,7 @@ function usable(L){ return L && (L.empty || (!(L.todo&&L.todo.length) && Date.no
 let coarseRetry=null;
 async function loadCoarse(force){
   clearTimeout(coarseRetry);
+  if(GL.ready) return; // only a fallback for the worldwide files
   if(!force && !WX.coarse){ const c=await cacheGet(COARSE.id); if(usable(c)){ WX.coarse=c; WX.at=c.at; WX.error=null; afterCoarse(); return; } }
   setStatus('loading','Loading forecast…');
   const L = (WX.coarse && WX.coarse.todo && WX.coarse.todo.length && !force) ? Object.assign(WX.coarse, specPoints(COARSE)) : newLayer(COARSE);
@@ -156,12 +158,14 @@ async function loadCoarse(force){
       setStatus('demo', 'Can’t reach the forecast service right now');
       coarseRetry=setTimeout(()=>loadCoarse(false), 5*60e3);
     }
+    if(GL.ready) return;
     S.grid = WX.coarse && WX.coarse.nT ? WX.coarse : null;
     S.eval=null; render(); drawBand();
     if(S.tab==='loc') renderPanel();
   }
 }
 function afterCoarse(){
+  if(GL.ready) return; // the worldwide files arrived in the meantime
   S.grid = WX.coarse;
   setStatus('live', DEMO ? 'Sample weather (demo mode)' : `Live forecast · updated ${fmtTime.format(new Date(WX.at))}`);
   S.eval=null; render(); drawBand(); selectLocation(S.sel, {fly:false, keepView:true});
@@ -193,12 +197,12 @@ async function ensureTilesAround(lat, lon, km){
 let tileTimer=null;
 function scheduleTiles(){ clearTimeout(tileTimer); tileTimer=setTimeout(loadVisibleTiles, 700); }
 async function loadVisibleTiles(){
-  if(!WX.coarse || proj.scale() < baseScale*8) return;
+  if(!S.grid || proj.scale() < baseScale*8) return;
   const c=proj.invert([W/2,H/2]); if(!c) return;
   const want=new Map();
   for(let i=0;i<=6;i++) for(let j=0;j<=6;j++){
     const ll=proj.invert([W*j/6, H*i/6]); if(!ll||isNaN(ll[0])||!visiblePt(ll)) continue;
-    if(ll[1]<24||ll[1]>84||ll[0]<-170||ll[0]>-50) continue;
+    if(Math.abs(ll[1])>84) continue;
     const sp=tileSpec(ll[1],ll[0]); if(!want.has(sp.id)) want.set(sp.id,{sp,d:d3.geoDistance(ll,c)});
   }
   const list=[...want.values()].sort((a,b)=>a.d-b.d).slice(0,4).map(x=>x.sp).filter(sp=>!(WX.tiles.has(sp.id)&&usable(WX.tiles.get(sp.id))));
@@ -252,7 +256,8 @@ function gridVal(key, t, lat, lon, detail){
   return PCT.has(key) ? Math.min(100, Math.max(0, v)) : v; // blending can overshoot 100% by a rounding hair
 }
 function gridValRaw(key, t, lat, lon, detail){
-  const base = layerValue(WX.coarse,key,t,lat,lon);
+  let base = GL.ready ? globalValue(key,t,lat,lon) : NaN;   // worldwide GFS first
+  if(isNaN(base)) base = layerValue(WX.coarse,key,t,lat,lon);
   if(detail===false) return base;
   const tile = WX.tiles.get(tileSpec(lat,lon).id);
   if(!tileReady(tile)) return base;
@@ -264,7 +269,7 @@ function gridValRaw(key, t, lat, lon, detail){
 function setStatus(kind, text){
   const el = $('#status'); el.className = 'status '+kind;
   el.innerHTML = `<span class="dot"></span><span>${esc(text)}</span>` + (kind==='live' ? ` <button id="refreshBtn" type="button">Refresh</button>` : '');
-  const b = $('#refreshBtn'); if(b) b.onclick = () => { WX.tiles.clear(); loadCoarse(true); };
+  const b = $('#refreshBtn'); if(b) b.onclick = () => refreshWeather(true);
 }
 
 /* --- light pollution: cached tiles of the city-glow model --- */

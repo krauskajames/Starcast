@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 23, 2026 · Current version: v3.3
+Last updated: October 23, 2026 · Current version: v3.4
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -12,7 +12,7 @@ Last updated: October 23, 2026 · Current version: v3.3
 
 - Web app that runs in any browser first, installable on a phone's home screen; a store app maybe later.
 - Single user for now; built so accounts can be added later.
-- Weather map layers cover the contiguous US, Alaska and Canada; spot forecasts work anywhere.
+- Weather map layers cover the whole world (v3.4): NOAA GFS files prepared every 6 hours by GitHub Actions and published with the site; Open-Meteo for spot forecasts and zoomed-in detail. Spot forecasts work anywhere.
 - Weather data: Open-Meteo (free for non-commercial use: 600 calls a minute, 5,000 an hour, 10,000 a day, counted per location). Starcast keeps a running budget below those limits: a 3° × 3.5° continental grid loads first, detailed 0.5° tiles load gradually for the region you zoom into, and everything is cached for 2 hours. If data can't load, the map shows no weather rather than sample weather.
 - Astronomy math runs in the browser (Astronomy Engine, satellite.js), so sky positions, events and seasons need no outside data.
 - Alerts run as a free scheduled GitHub Actions job; personal locations live in a repository secret.
@@ -33,7 +33,7 @@ Last updated: October 23, 2026 · Current version: v3.3
 | "None" weather layer, to read the base map clearly | ✅ | v3.1 |
 | Weather opacity slider | ✅ | v3.3; in the layer legend |
 | More detailed Canadian coastline | 💡 | Currently a simplified outline |
-| Weather layers for the rest of the world | 🔜 | See section 13: global data pipeline |
+| Weather layers for the rest of the world | ✅ | v3.4; see section 13 |
 | Wind-particle animation like nullschool (jet stream) | 💡 | |
 
 ## 2. Weather layers
@@ -173,14 +173,15 @@ Last updated: October 23, 2026 · Current version: v3.3
 
 ## 13. Global coverage
 
-Today every visitor's browser asks Open-Meteo for a grid of forecast points. That works for North America, but a global grid would need thousands of points per visit, well past the free limits and too slow to load. The plan is to prepare the data once on a schedule, the way earth.nullschool.net does, and let every visitor download the same small files.
+Asking Open-Meteo for a grid of forecast points from every visitor's browser works for North America, but a global grid would need thousands of points per visit, well past the free limits. So since v3.4 the data is prepared once on a schedule, the way earth.nullschool.net does, and every visitor downloads the same small files.
 
 | Feature | Status | Notes |
 |---|---|---|
-| Scheduled data pipeline: a GitHub Actions job every 6 hours downloads NOAA GFS 0.5° global forecasts (cloud layers, humidity, temperature and dew point, surface and 250/500 hPa winds) for the next 72 hours | 🔜 | NOAA NOMADS "GRIB filter" downloads only the variables needed |
-| Convert to compact per-variable, per-hour image tiles (8-bit, about 100 KB each) and publish them to a public storage bucket (Supabase Storage), replacing the previous run | 🔜 | Keeps the git history small; every visitor loads the same files |
-| Seeing and transparency computed globally in the pipeline | 🔜 | Same formulas as today |
-| Map layers worldwide, with the US and Canada detail kept | 🔜 | Spot forecasts already work worldwide through Open-Meteo |
+| Scheduled data pipeline: a GitHub Actions job every 6 hours downloads NOAA GFS global forecasts (total and high cloud, humidity, temperature and dew point, surface and 250/500 hPa winds) for the next 72 hours, every 3 hours | ✅ | v3.4; `pipeline/gfs.py`. Reads only the needed fields by byte range from NOAA's AWS Open Data bucket, with the NOMADS GRIB filter as backup; keeps the published data if NOAA is down |
+| Compact files: one gzip file per 3-hour step, 8 channels at one byte per value on a 1° grid, published with the site to GitHub Pages | ✅ | v3.4; deployed by `.github/workflows/site.yml`, never committed, so the git history stays small |
+| Seeing and transparency computed worldwide | ✅ | v3.4; in the browser from the GFS fields, same formulas as before |
+| Map layers worldwide, with zoomed-in detail kept | ✅ | v3.4; GFS is the base everywhere, Open-Meteo 0.5° detail tiles blend in when zoomed in, now on any land. Falls back to the North American Open-Meteo grid if the files can't load |
+| 0.5° worldwide files | 💡 | Four times the download; worth it once files load only for the area in view |
 | Global light pollution from NASA Black Marble (VIIRS) night lights instead of the city list | 🔜 | Catches small towns everywhere |
 | Wind-particle animation like nullschool, from the same wind data | 💡 | Natural next step once winds are gridded |
 | HRRR 3 km data for the US in the pipeline | 💡 | Sharper clouds for the "Where to go" search |
@@ -197,6 +198,7 @@ Today every visitor's browser asks Open-Meteo for a grid of forecast points. Tha
 
 ## Version history
 
+- **v3.4 (Oct 23, 2026):** Worldwide weather map from NOAA GFS, prepared every 6 hours by GitHub Actions and published with the site; zoomed-in detail tiles anywhere on land.
 - **v3.3 (Oct 22, 2026):** Aurora drawn above the weather layer; weather covers the Arctic islands to 84°N; weather opacity slider. Framing preview gains the Sun, Moon and planets at their real size today, a Barlow option and a pixel close-up; Gear explains how every number is calculated. Eyepiece and camera pick-lists, notes on log entries, 31 more deep-sky showpieces, Jupiter moon shadows, solar eclipses from your location, and "The Sun today".
 - **v3.2 (Oct 22, 2026):** Accounts (Google sign-in through Supabase) with cross-device sync and PostGIS saved locations, ready to switch on. Multi-hue colour scales for cloud cover, observing (viridis), seeing and transparency (red to deep blue), dew risk and wind, so middle values read clearly. Detailed weather patches shown only when zoomed in to a region, with wider blended edges.
 - **v3.1.4 (Oct 21, 2026):** Fixed twinkling holes in the Observing layer under overcast skies (a rounding overshoot past 100% cloud produced invalid values).

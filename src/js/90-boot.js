@@ -6,8 +6,9 @@ buildLayers(); showAttribution(); resize();
 proj.rotate([-S.sel.lon, -S.sel.lat, 0]);
 setTime(nowIndex());
 renderPanel();
-loadCoarse(false);
+refreshWeather(false);
 loadAurora();
-setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; loadCoarse(false); } }, 5*60e3);
+setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; refreshWeather(false); } }, 5*60e3);
 registerSW();
 initAccount();
+if(/[?&]debug\b/.test(location.search)) window.__sc = { S, GL, WX, gridVal, globalValue, proj, render, inLand }; // for automated tests
