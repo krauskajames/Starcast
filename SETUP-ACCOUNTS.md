@@ -18,8 +18,8 @@ You'll create two free accounts: Supabase, and a Google Cloud project for the "S
 3. Wait a minute or two for the project to start.
 4. Open **SQL Editor** → **New query**. Paste in the whole of [`supabase/schema.sql`](supabase/schema.sql) from this repository and press **Run**. It should finish with "Success. No rows returned."
 5. Open **Authentication** → **URL Configuration**:
-   - **Site URL:** `https://krauskajames.github.io/Starcast/`
-   - **Redirect URLs:** add `https://krauskajames.github.io/Starcast/**`. If Starcast later moves to your own domain (for example `starcast.krauskagis.com`), add that address here too.
+   - **Site URL:** `https://krauskagis.com/Starcast/`
+   - **Redirect URLs:** add `https://krauskagis.com/Starcast/**`. If Starcast later moves to your own domain (for example `starcast.krauskagis.com`), add that address here too.
 6. Open **Authentication** → **Sign In / Providers** → **Google**. Leave this page open: you'll need its **Callback URL** in Part 2, and you'll paste Google's keys here at the end.
 
 ## Part 2: Google sign-in
@@ -32,7 +32,7 @@ You'll create two free accounts: Supabase, and a Google Cloud project for the "S
 3. Under **Data Access**, add the scopes `openid`, `.../auth/userinfo.email` and `.../auth/userinfo.profile`. These are basic scopes, so Google doesn't need to review the app.
 4. Under **Clients**, choose **Create client**:
    - **Application type:** Web application
-   - **Authorized JavaScript origins:** `https://krauskajames.github.io`
+   - **Authorized JavaScript origins:** `https://krauskagis.com`
    - **Authorized redirect URIs:** the **Callback URL** from the Supabase Google page (it looks like `https://abcdefgh.supabase.co/auth/v1/callback`)
    - Press **Create**, then copy the **Client ID** and **Client secret**.
 5. Under **Audience**, press **Publish app**. While the app is in testing, only Google accounts you list as test users can sign in; publishing lets anyone sign in.

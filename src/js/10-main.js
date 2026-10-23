@@ -566,7 +566,8 @@ function evaluate(){
   if(S.eval) return S.eval;
   const sv = S.saved.find(x=>near(x,S.sel));
   S.eval = C.evaluateTargets({ lat:S.sel.lat, lon:S.sel.lon, hours:S.times, wxAt, gear:gearForCalc(), bortle:bortleFor(S.sel), interests:S.interests, horizon: sv && sv.horizon });
-  S.eval.nights = C.nights(S.times, S.sel.lat, S.sel.lon);
+  // leave out a night that is already ending (under 3 dark hours left at the start of the window)
+  S.eval.nights = C.nights(S.times, S.sel.lat, S.sel.lon).filter(n=>!(n.start===0 && n.end-n.start<3));
   return S.eval;
 }
 function gearForCalc(){ const g=Object.assign({},activeGear()); if(!g.cameraOn) delete g.camera; return g; }
@@ -583,8 +584,9 @@ function renderPanel(){
 
 function nightLabel(n){
   const d=tDate(n.start), now=new Date();
-  const same = d.toDateString()===now.toDateString() || (n.start===0);
-  return same ? 'Tonight' : fmtDay.format(d)+' night';
+  if(n.start===0 && now.getHours()<12) return 'Before dawn';   // already dark when the forecast window opens, after midnight
+  if(n.start===0 || d.toDateString()===now.toDateString()) return 'Tonight';
+  return fmtDay.format(d)+' night';
 }
 function scoreClass(s){ return s>=70?'s-ex':s>=50?'s-gd':s>=30?'s-fr':'s-pr'; }
 function rangeText(a,b){ return `${hourLabel(tDate(a))} – ${hourLabel(tDate(b))}`; }

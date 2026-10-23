@@ -123,7 +123,7 @@ Alert settings live only in your GitHub secret.
 
 ## Hosting
 
-This repository is set up for GitHub Pages: go to **Settings → Pages** and deploy from the `main` branch, `/ (root)` folder. GitHub shows the site's address there; it updates a minute or two after each commit. "Install on your phone" and "Use my location" need the hosted site, since browsers allow them only over https.
+This repository is set up for GitHub Pages: go to **Settings → Pages** and deploy from the `main` branch, `/ (root)` folder. The site is served at https://krauskagis.com/Starcast/ because the portfolio site's custom domain applies to all GitHub Pages sites on this account. It updates a minute or two after each commit. "Install on your phone" and "Use my location" need the hosted site, since browsers allow them only over https.
 
 ## Files
 

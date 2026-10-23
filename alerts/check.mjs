@@ -101,7 +101,7 @@ async function main() {
         console.log(`${loc.name}: ${lines.length} good night(s) this week`);
         continue;
       }
-      const n = C.nights(hours, loc.lat, loc.lon).find(x => x.start < 20); // tonight
+      const n = C.nights(hours, loc.lat, loc.lon).find(x => x.start < 20 && !(x.start === 0 && x.end - x.start < 3)); // tonight, skipping a night already ending
       if (!n) { console.log(`${loc.name}: no darkness tonight`); continue; }
       const al = C.nightAlert(ev, n, wxAt, loc.name, hourLabel, 'tonight');
       const meets = al.good && al.hours >= cfg.rules.minHours && (cfg.rules.quality === 'great' ? al.quality === 'great' : al.quality !== 'fair');
