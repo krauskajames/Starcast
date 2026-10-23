@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 22, 2026 · Current version: v3.3
+Last updated: October 23, 2026 · Current version: v3.3
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -33,7 +33,7 @@ Last updated: October 22, 2026 · Current version: v3.3
 | "None" weather layer, to read the base map clearly | ✅ | v3.1 |
 | Weather opacity slider | ✅ | v3.3; in the layer legend |
 | More detailed Canadian coastline | 💡 | Currently a simplified outline |
-| Weather layers for the rest of the world | 💡 | |
+| Weather layers for the rest of the world | 🔜 | See section 13: global data pipeline |
 | Wind-particle animation like nullschool (jet stream) | 💡 | |
 
 ## 2. Weather layers
@@ -46,7 +46,7 @@ Last updated: October 22, 2026 · Current version: v3.3
 | Forecast confidence: agreement between US, European and Canadian models | ✅ | v3.0; spot forecast strip and alert text |
 | Live satellite cloud imagery (GOES) | 💡 | |
 | Smoke | 💡 | |
-| Light pollution from satellite night-lights data, including small towns | 💡 | Would refine rural estimates |
+| Light pollution from satellite night-lights data, including small towns | 🔜 | Needed for global coverage; see section 13 |
 
 ## 3. Sky over the globe
 
@@ -152,7 +152,9 @@ Last updated: October 22, 2026 · Current version: v3.3
 | Feature | Status | Notes |
 |---|---|---|
 | Forecast checks against ClearDarkSky and your own eyes | ✅ | v1.1 |
-| Tune seeing and transparency estimates from your checks | 🔧 | After about 10 nights of checks |
+| First field check: Starcast's cloud, seeing and transparency lined up with ClearDarkSky (Canadian model) over the first nights of use | ✅ | Oct 2026, Wisconsin |
+| Tune seeing and transparency estimates from your checks | 🔧 | Keep logging Forecast checks; about 10 nights gives numbers worth quoting |
+| Publish a validation summary (agreement with ClearDarkSky and with what was observed) | 💡 | For the portfolio case study |
 | Learn which model to trust at your site from the log | 💡 | |
 
 ## 12. App and data
@@ -168,6 +170,30 @@ Last updated: October 22, 2026 · Current version: v3.3
 | Phone app in the app stores | 💡 | |
 
 ---
+
+## 13. Global coverage
+
+Today every visitor's browser asks Open-Meteo for a grid of forecast points. That works for North America, but a global grid would need thousands of points per visit, well past the free limits and too slow to load. The plan is to prepare the data once on a schedule, the way earth.nullschool.net does, and let every visitor download the same small files.
+
+| Feature | Status | Notes |
+|---|---|---|
+| Scheduled data pipeline: a GitHub Actions job every 6 hours downloads NOAA GFS 0.5° global forecasts (cloud layers, humidity, temperature and dew point, surface and 250/500 hPa winds) for the next 72 hours | 🔜 | NOAA NOMADS "GRIB filter" downloads only the variables needed |
+| Convert to compact per-variable, per-hour image tiles (8-bit, about 100 KB each) and publish them to a public storage bucket (Supabase Storage), replacing the previous run | 🔜 | Keeps the git history small; every visitor loads the same files |
+| Seeing and transparency computed globally in the pipeline | 🔜 | Same formulas as today |
+| Map layers worldwide, with the US and Canada detail kept | 🔜 | Spot forecasts already work worldwide through Open-Meteo |
+| Global light pollution from NASA Black Marble (VIIRS) night lights instead of the city list | 🔜 | Catches small towns everywhere |
+| Wind-particle animation like nullschool, from the same wind data | 💡 | Natural next step once winds are gridded |
+| HRRR 3 km data for the US in the pipeline | 💡 | Sharper clouds for the "Where to go" search |
+
+## 14. Portfolio
+
+| Feature | Status | Notes |
+|---|---|---|
+| Starcast served on krauskagis.com | ✅ | krauskagis.com/Starcast/ |
+| Google branding verification through the krauskagis.com domain (Search Console DNS record) | 🔜 | Shows the Starcast name on Google's sign-in screen |
+| Embed mode (`?embed`): compact layout for a case-study page, no sign-in (Google blocks sign-in inside embedded frames), an "Open full Starcast" button | 🔜 | |
+| Case study page on krauskagis.com, matching the DuctBuilder page | 🔜 | Problem, data, methods, validation, architecture, lessons, what's next |
+| Architecture diagram: data sources → pipeline → browser app → Supabase/PostGIS | 💡 | For the case study |
 
 ## Version history
 
