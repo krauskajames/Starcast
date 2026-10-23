@@ -359,6 +359,7 @@ def main():
     ap.add_argument('--base', help='test server standing in for AWS/NOMADS')
     ap.add_argument('--reuse-from', help='published data URL (…/data/wx) to copy when nothing newer is built')
     ap.add_argument('--reuse-only', action='store_true', help='copy published data; build only if that fails')
+    ap.add_argument('--rebuild', action='store_true', help='build the newest run even if it is already published')
     ap.add_argument('--now', help='pretend time, e.g. 2026-10-23T12:00Z (testing)')
     a = ap.parse_args()
 
@@ -377,7 +378,7 @@ def main():
 
     now = dt.datetime.strptime(a.now, '%Y-%m-%dT%H:%MZ').replace(tzinfo=dt.timezone.utc) if a.now \
         else dt.datetime.now(dt.timezone.utc)
-    current = published(a.reuse_from) if a.reuse_from else None
+    current = published(a.reuse_from) if a.reuse_from and not a.rebuild else None
     for kind in a.sources.split(','):
         src = Source(kind, a.res, a.base)
         for cyc in cycles(now):
