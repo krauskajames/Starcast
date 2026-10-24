@@ -199,6 +199,7 @@ Asking Open-Meteo for a grid of forecast points from every visitor's browser wor
 
 ## Version history
 
+- **v3.4.1 (Oct 23, 2026):** The globe opens centered on the contiguous US.
 - **v3.4 (Oct 23, 2026):** Worldwide weather map from NOAA GFS (0.5° averaged to 1°, smoothed with cubic B-splines), prepared every 6 hours by GitHub Actions and published with the site; zoomed-in detail tiles anywhere on land. Embed and record modes and a portfolio case study.
 - **v3.3 (Oct 22, 2026):** Aurora drawn above the weather layer; weather covers the Arctic islands to 84°N; weather opacity slider. Framing preview gains the Sun, Moon and planets at their real size today, a Barlow option and a pixel close-up; Gear explains how every number is calculated. Eyepiece and camera pick-lists, notes on log entries, 31 more deep-sky showpieces, Jupiter moon shadows, solar eclipses from your location, and "The Sun today".
 - **v3.2 (Oct 22, 2026):** Accounts (Google sign-in through Supabase) with cross-device sync and PostGIS saved locations, ready to switch on. Multi-hue colour scales for cloud cover, observing (viridis), seeing and transparency (red to deep blue), dew risk and wind, so middle values read clearly. Detailed weather patches shown only when zoomed in to a region, with wider blended edges.

@@ -3,7 +3,6 @@ window.addEventListener('resize', ()=>{ clearTimeout(resize.t); resize.t=setTime
 { const t=(location.search.match(/[?&]theme=(light|dark)\b/)||[])[1]; applyTheme(t || store.get('theme','auto')); }
 { const hm = homeSpot(); if(hm){ S.sel = {lat:hm.lat, lon:hm.lon, name:hm.name}; } }
 buildLayers(); showAttribution(); resize();
-proj.rotate([-S.sel.lon, -S.sel.lat, 0]);
 setTime(nowIndex());
 renderPanel();
 refreshWeather(false);

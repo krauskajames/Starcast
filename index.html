@@ -1791,10 +1791,18 @@ function resize(){
   const phone = window.innerWidth<=860;
   const top = MODE.record ? 0 : phone ? 64 : 0, bottom = MODE.embed ? (phone && !MODE.record ? 96 : 0) : phone ? 140 : 70;
   const avail = Math.max(120, Math.min(W, H-top-bottom));
-  if(!resize.done){ if(MODE.embed) proj.scale((MODE.record ? Math.min(W,H) : avail)*0.43).rotate([96,-28]); else proj.scale(avail*(phone?8.5:6.4)).rotate([89.6,-44.7]); resize.done=true; }
+  if(!resize.done){ if(MODE.embed) proj.scale((MODE.record ? Math.min(W,H) : avail)*0.43).rotate([96,-28]); else fitUSA(phone, H-top-bottom); resize.done=true; }
   else proj.scale(baseScale*k);
   proj.translate([MODE.embed && !phone && !MODE.record ? W/2 + 110 : W/2, top + (H-top-bottom)/2]);
   render(); drawBand();
+}
+// opening view: the contiguous US filling the space beside the layer list
+function fitUSA(phone, h){
+  proj.rotate([98,-38.5,0]).scale(1).translate([0,0]);
+  const pts=[[-124.7,48.4],[-95,49],[-67,45],[-80.1,25.2],[-97.4,25.9],[-117.1,32.5]].map(p=>proj(p));
+  const xs=pts.map(p=>p[0]), ys=pts.map(p=>p[1]);
+  const w = phone ? W-24 : W-2*230, k = Math.min(w/(Math.max(...xs)-Math.min(...xs)), (h-24)/(Math.max(...ys)-Math.min(...ys)));
+  proj.scale(Math.max(baseScale, k*0.98));
 }
 let rafPending=false, quality='hi', idleTimer=null;
 function render(q){
@@ -4063,7 +4071,6 @@ window.addEventListener('resize', ()=>{ clearTimeout(resize.t); resize.t=setTime
 { const t=(location.search.match(/[?&]theme=(light|dark)\b/)||[])[1]; applyTheme(t || store.get('theme','auto')); }
 { const hm = homeSpot(); if(hm){ S.sel = {lat:hm.lat, lon:hm.lon, name:hm.name}; } }
 buildLayers(); showAttribution(); resize();
-proj.rotate([-S.sel.lon, -S.sel.lat, 0]);
 setTime(nowIndex());
 renderPanel();
 refreshWeather(false);
