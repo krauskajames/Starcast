@@ -8,6 +8,11 @@ Writes to media/:
 """
 import asyncio, os, shutil, subprocess, sys
 from playwright.async_api import async_playwright
+try:  # a bundled ffmpeg avoids installing it from the Ubuntu package mirror
+    import imageio_ffmpeg
+    FFMPEG = imageio_ffmpeg.get_ffmpeg_exe()
+except ImportError:
+    FFMPEG = 'ffmpeg'
 
 URL = os.environ.get('STARCAST_URL', 'https://krauskagis.com/Starcast/')
 OUT = os.environ.get('OUT', 'media')
@@ -35,10 +40,10 @@ async def globe(p):
         await pg.locator('#globe').screenshot(path=os.path.join(frames, f'{i:04d}.png'))
     await b.close()
     src = os.path.join(frames, '%04d.png')
-    ff = lambda *a: subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', src, *a], check=True)
+    ff = lambda *a: subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-framerate', str(FPS), '-i', src, *a], check=True)
     ff('-c:v', 'libx264', '-pix_fmt', 'yuv420p', '-crf', '22', '-preset', 'slow', '-movflags', '+faststart', os.path.join(OUT, 'starcast-globe.mp4'))
     ff('-vf', 'fps=12,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=128[p];[b][p]paletteuse=dither=sierra2_4a', os.path.join(OUT, 'starcast-globe.gif'))
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', os.path.join(frames, '0000.png'), '-q:v', '3', os.path.join(OUT, 'starcast-globe.jpg')], check=True)
+    subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-i', os.path.join(frames, '0000.png'), '-q:v', '3', os.path.join(OUT, 'starcast-globe.jpg')], check=True)
     shutil.rmtree(frames)
 
 
@@ -53,7 +58,7 @@ async def ui(p):
     png = os.path.join(OUT, '_ui.png')
     await pg.screenshot(path=png)
     await b.close()
-    subprocess.run(['ffmpeg', '-y', '-loglevel', 'error', '-i', png, '-q:v', '3', os.path.join(OUT, 'starcast-ui.jpg')], check=True)
+    subprocess.run([FFMPEG, '-y', '-loglevel', 'error', '-i', png, '-q:v', '3', os.path.join(OUT, 'starcast-ui.jpg')], check=True)
     os.remove(png)
 
 
