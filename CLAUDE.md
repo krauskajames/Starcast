@@ -57,6 +57,7 @@ Starcast is an astronomy viewing-conditions globe: earth.nullschool-style weathe
 - Globe drawing order: sea, base map or land, under-overlay (night, sunlit side), weather raster (opacity `S.wxOpacity`), over-overlay (aurora, planet zones), lines and labels.
 - Module order matters only for top-level statements: a module's top-level code may use anything from earlier files; functions are hoisted across all modules.
 - The page defines its own `[hidden]{display:none!important}`; modals rely on it.
+- Look (v3.5): Geist for all UI text in sentence case (no uppercase, letter-spaced labels), Geist Mono only for numbers; frosted-glass floating surfaces (`--panel` + backdrop blur, `--shadow`), radii `--r` 14 / `--r-sm` 9 / `--r-xs` 6; neutral selection states, amber accent used sparingly. Canvas text (globe, sky chart) also uses Geist.
 - All colors are CSS tokens on `:root`, with light values under `prefers-color-scheme: light` and `[data-theme="light"]`. Globe colors come from the `--map-*` tokens via `readPalette()`. No literal colors in components.
 - Settings persist in `localStorage` under `starcast.*` keys, wrapped in try/catch.
 - Plain-language copy, written from the observer's side. Times show as "9 pm". Units default to °F and mph.

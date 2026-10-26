@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 23, 2026 · Current version: v3.4
+Last updated: October 23, 2026 · Current version: v3.5
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -199,6 +199,7 @@ Asking Open-Meteo for a grid of forecast points from every visitor's browser wor
 
 ## Version history
 
+- **v3.5 (Oct 26, 2026):** Refreshed look: Geist type in sentence case, frosted-glass panels and a floating time bar, segmented tabs, icon buttons for theme and night vision, flatter lists and stat rows.
 - **v3.4.1 (Oct 23, 2026):** The globe opens centered on the contiguous US.
 - **v3.4 (Oct 23, 2026):** Worldwide weather map from NOAA GFS (0.5° averaged to 1°, smoothed with cubic B-splines), prepared every 6 hours by GitHub Actions and published with the site; zoomed-in detail tiles anywhere on land. Embed and record modes and a portfolio case study.
 - **v3.3 (Oct 22, 2026):** Aurora drawn above the weather layer; weather covers the Arctic islands to 84°N; weather opacity slider. Framing preview gains the Sun, Moon and planets at their real size today, a Barlow option and a pixel close-up; Gear explains how every number is calculated. Eyepiece and camera pick-lists, notes on log entries, 31 more deep-sky showpieces, Jupiter moon shadows, solar eclipses from your location, and "The Sun today".

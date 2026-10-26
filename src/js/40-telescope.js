@@ -143,9 +143,9 @@ function drawSky(){
   // stars
   SKY.stars.forEach(([lo,la,mag],i)=>{ const p=P(((lo+360)%360)/15, la); if(!p) return; const rr=Math.max(0.5, 3.4-0.6*mag);
     g.beginPath(); g.arc(p[0],p[1],rr,0,7); g.fillStyle='rgba(245,248,255,'+(mag<3?1:0.85)+')'; g.fill();
-    const nm=SKY.names[i]; if(nm){ g.fillStyle='rgba(220,230,250,.75)'; g.font='10px "Atkinson Hyperlegible", system-ui, sans-serif'; g.fillText(nm,p[0]+4,p[1]-3); } });
+    const nm=SKY.names[i]; if(nm){ g.fillStyle='rgba(220,230,250,.75)'; g.font='10px "Geist", system-ui, sans-serif'; g.fillText(nm,p[0]+4,p[1]-3); } });
   // constellation names
-  g.font='600 9.5px "Chakra Petch", system-ui, sans-serif'; g.fillStyle='rgba(150,180,230,.6)'; g.textAlign='center';
+  g.font='600 9.5px "Geist", system-ui, sans-serif'; g.fillStyle='rgba(150,180,230,.6)'; g.textAlign='center';
   for(const id in SKY.cons){ const [nm,lo,la,rank]=SKY.cons[id]; if(rank>2) continue; const p=P(((lo+360)%360)/15, la); if(p) g.fillText(nm.toUpperCase(),p[0],p[1]); }
   g.textAlign='left';
   skyHits=[];
@@ -161,18 +161,18 @@ function drawSky(){
   const bcol={Sun:'#ffd27a',Moon:'#e8ecf5',Mercury:'#c9bba8',Venus:'#fff1c4',Mars:'#ff8a5c',Jupiter:'#f3cf9b',Saturn:'#e8d58a',Uranus:'#9fe0e0',Neptune:'#8fb0ff'};
   bodies.forEach(b=>{ const e=C.topo(b,d,lat,lon); const p=proj2(e.alt,e.az); if(!p) return;
     g.beginPath(); g.arc(p[0],p[1], b==='Sun'||b==='Moon'?7:4.5,0,7); g.fillStyle=bcol[b]; g.fill();
-    g.font='600 11px "Atkinson Hyperlegible", system-ui, sans-serif'; g.fillStyle=bcol[b]; g.fillText(b,p[0]+8,p[1]+4);
+    g.font='600 11px "Geist", system-ui, sans-serif'; g.fillStyle=bcol[b]; g.fillText(b,p[0]+8,p[1]+4);
     skyHits.push({p,name:b,alt:e.alt,az:e.az}); });
   // tonight's plan targets
   (S.plan||[]).forEach(pl=>{ const t=pl.t; let ra=t.ra, dec=t.dec; if(t.body) return;
     const alt=C.altFast(lat,lon,ra,dec,gst), az=C.azFast(lat,lon,ra,dec,gst), p=proj2(alt,az); if(!p) return;
     g.beginPath(); g.arc(p[0],p[1],7,0,7); g.strokeStyle='#f1b450'; g.lineWidth=1.5; g.stroke();
-    g.font='600 11px "Atkinson Hyperlegible", system-ui, sans-serif'; g.fillStyle='#f6d9a3'; g.fillText(t.name.replace(/ \(M\d+\)$/,''),p[0]+9,p[1]+4);
+    g.font='600 11px "Geist", system-ui, sans-serif'; g.fillStyle='#f6d9a3'; g.fillText(t.name.replace(/ \(M\d+\)$/,''),p[0]+9,p[1]+4);
     skyHits.push({p,name:t.name,alt,az}); });
   g.restore();
   // rim + cardinal points
   g.beginPath(); g.arc(cx,cy,R,0,7); g.strokeStyle=muted; g.lineWidth=1; g.stroke();
-  g.font='700 13px "Chakra Petch", system-ui, sans-serif'; g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle';
+  g.font='700 13px "Geist", system-ui, sans-serif'; g.fillStyle=fg; g.textAlign='center'; g.textBaseline='middle';
   [['N',0],['E',90],['S',180],['W',270]].forEach(([l,az])=>{ const r=R+12; g.fillText(l, cx - r*Math.sin(az*Math.PI/180), cy - r*Math.cos(az*Math.PI/180)); });
   g.textAlign='left'; g.textBaseline='alphabetic';
 }

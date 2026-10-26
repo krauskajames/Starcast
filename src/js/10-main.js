@@ -249,7 +249,11 @@ readPalette();
 const THEMES = ['auto','light','dark'];
 function applyTheme(t){
   if(t==='auto') document.documentElement.removeAttribute('data-theme'); else document.documentElement.setAttribute('data-theme', t);
-  $('#themeBtn').textContent = 'Theme: ' + t[0].toUpperCase()+t.slice(1);
+  const ICON = { auto:'<path d="M8 1.5a6.5 6.5 0 1 0 0 13z" fill="currentColor"/><circle cx="8" cy="8" r="6.5" fill="none" stroke="currentColor" stroke-width="1.4"/>',
+    light:'<circle cx="8" cy="8" r="3" fill="currentColor"/><path d="M8 1v2M8 13v2M1 8h2M13 8h2M3 3l1.4 1.4M11.6 11.6 13 13M3 13l1.4-1.4M11.6 4.4 13 3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>',
+    dark:'<path d="M13.5 10A6 6 0 0 1 6 2.5a6 6 0 1 0 7.5 7.5z" fill="currentColor"/>' };
+  $('#themeBtn').innerHTML = `<svg width="15" height="15" viewBox="0 0 16 16" aria-hidden="true">${ICON[t]}</svg><span class="lbl">${t[0].toUpperCase()+t.slice(1)}</span>`;
+  $('#themeBtn').setAttribute('aria-label', 'Theme: '+t);
   readPalette(); render(); drawBand && drawBand();
 }
 $('#themeBtn').onclick = () => { const t = THEMES[(THEMES.indexOf(store.get('theme','auto'))+1)%3]; store.set('theme',t); applyTheme(t); };
@@ -417,7 +421,7 @@ function draw(){
   ctx.beginPath(); path(land); ctx.strokeStyle=PAL.coast; ctx.lineWidth=.6; ctx.stroke();
   ctx.beginPath(); path({type:'Sphere'}); ctx.strokeStyle=PAL.rim; ctx.lineWidth=1; ctx.stroke();
   // sub-body points (where the body is overhead)
-  ctx.font='600 11px "Chakra Petch", system-ui, sans-serif'; ctx.textBaseline='middle';
+  ctx.font='600 11px "Geist", system-ui, sans-serif'; ctx.textBaseline='middle';
   if(sunOn && !MODE.record){
     const lon=((sky.sun.ra*15 - sky.g*15 + 540)%360)-180, p=visiblePt([lon,sky.sun.dec]);
     if(p){ ctx.beginPath(); ctx.arc(p[0],p[1],6,0,7); ctx.fillStyle='#ffce78'; ctx.fill(); ctx.strokeStyle='rgba(255,206,120,.5)'; ctx.lineWidth=3; ctx.beginPath(); ctx.arc(p[0],p[1],11,0,7); ctx.stroke(); ctx.fillStyle=PAL.label; ctx.fillText('Sun overhead',p[0]+15,p[1]); }
@@ -432,7 +436,7 @@ function draw(){
   if(k > 2.5){
     const minPop = k>20 ? 0 : k>11 ? 20000 : k>6 ? 150000 : k>3.5 ? 900000 : 3000000;
     const drawn=[];
-    ctx.font='12px "Atkinson Hyperlegible", system-ui, sans-serif';
+    ctx.font='12px "Geist", system-ui, sans-serif';
     S.saved.forEach(s=>{ const p=visiblePt([s.lon,s.lat]); if(p) drawn.push(p); });
     C.CITIES.filter(c=>c[3]>=minPop).sort((a,b)=>b[3]-a[3]).forEach(([n,la,lo])=>{
       const p=visiblePt([lo,la]); if(!p || p[0]<0||p[0]>W||p[1]<(W<600?70:0)||p[1]>H || (p[1]<72 && p[0]<380)) return; // keep clear of the title and status line
@@ -441,12 +445,12 @@ function draw(){
     if(k > 4.5) SKYPLACES.forEach(([n,la,lo])=>{ const p=visiblePt([lo,la]); if(!p) return; star(p[0],p[1],5,PAL.sky); ctx.fillStyle=PAL.sky; ctx.fillText(n,p[0]+8,p[1]); });
   }
   // saved
-  ctx.font='600 12px "Atkinson Hyperlegible", system-ui, sans-serif';
+  ctx.font='600 12px "Geist", system-ui, sans-serif';
   S.saved.forEach(s=>{ const p=visiblePt([s.lon,s.lat]); if(!p) return;
     ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(Math.PI/4); ctx.fillStyle=PAL.saved; ctx.fillRect(-4,-4,8,8); ctx.restore();
     ctx.fillStyle=PAL.savedLabel; ctx.fillText(s.name,p[0]+8,p[1]); });
   if(S.drive && S.drive.results){
-    ctx.font='600 12px "Atkinson Hyperlegible", system-ui, sans-serif';
+    ctx.font='600 12px "Geist", system-ui, sans-serif';
     S.drive.results.forEach((d,i)=>{ const p=visiblePt([d.lon,d.lat]); if(!p) return; star(p[0],p[1],6,PAL.drive); if(r > baseScale*5){ ctx.fillStyle=PAL.drive; ctx.fillText(d.name.length>32?d.name.slice(0,30)+'…':d.name,p[0]+9,p[1]); } });
   }
   // selection
@@ -552,8 +556,8 @@ function drawBand(){
   ticks.innerHTML=h;
 }
 $('#playBtn').onclick=()=>{
-  if(S.playing){ clearInterval(S.playing); S.playing=null; $('#playIcon').setAttribute('d','M3 1.5v11l9-5.5z'); return; }
-  $('#playIcon').setAttribute('d','M2.5 1.5h3v11h-3zM8.5 1.5h3v11h-3z');
+  if(S.playing){ clearInterval(S.playing); S.playing=null; $('#playIcon').setAttribute('d','M4 2v10l8-5z'); return; }
+  $('#playIcon').setAttribute('d','M3.5 2h2.5v10H3.5zM8 2h2.5v10H8z');
   S.playing=setInterval(()=>setTime((S.ti+1)%72), 450);
 };
 
