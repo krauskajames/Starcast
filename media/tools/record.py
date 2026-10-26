@@ -52,8 +52,7 @@ async def ui(p):
     pg = await b.new_page(viewport={'width': 1440, 'height': 900}, device_scale_factor=2)
     await pg.goto(URL + '?debug')
     await wait_for_weather(pg)
-    # pull back to show the region around the default spot (Madison) with tonight's weather
-    await pg.evaluate("() => { __sc.proj.scale(__sc.proj.scale() / 2.4); __sc.render(); }")
+    # the app opens on the contiguous US, which is the view the screenshot wants
     await pg.wait_for_timeout(8000)  # spot forecast, model agreement and aurora
     png = os.path.join(OUT, '_ui.png')
     await pg.screenshot(path=png)
