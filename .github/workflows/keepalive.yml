@@ -19,10 +19,19 @@ jobs:
           SUPABASE_URL: https://lqlkyanlnmszxyuyqjyd.supabase.co
           SUPABASE_KEY: sb_publishable_QYdjcr5V44YgWq676MwGFQ_aYkfGlGB
         run: |
-          code=$(curl -s -o body.txt -w '%{http_code}' \
-            "$SUPABASE_URL/rest/v1/saved_locations?select=id&limit=1" \
-            -H "apikey: $SUPABASE_KEY")
-          echo "HTTP $code"; cat body.txt; echo
+          # retry a few times so a brief network or DNS hiccup on the runner doesn't fail the job
+          code=000
+          for i in 1 2 3 4; do
+            code=$(curl -s -o body.txt -w '%{http_code}' --max-time 30 \
+              "$SUPABASE_URL/rest/v1/saved_locations?select=id&limit=1" \
+              -H "apikey: $SUPABASE_KEY") && break
+            echo "Attempt $i could not reach Supabase; trying again in 30 s"; sleep 30
+          done
+          echo "HTTP $code"; cat body.txt 2>/dev/null; echo
+          if [ "$code" = "000" ]; then
+            echo "::error::The Supabase address doesn't exist right now. This usually means the project is paused (or was deleted). Open supabase.com/dashboard, pick the Starcast project and choose Restore project."
+            exit 1
+          fi
           if [ "$code" -ge 400 ]; then
             echo "::error::Supabase answered $code. If the project is paused, restore it in the Supabase dashboard."
             exit 1
