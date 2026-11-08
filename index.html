@@ -1563,10 +1563,13 @@ const DEFAULT_GEAR = {
 };
 const DEFAULT_INT = { planets:true, moon:true, deepsky:true, doubles:true, meteors:true, photo:true, nakedEye:true, solar:true, satellites:true };
 const FILTER_TYPES = [['uhc','UHC (nebula)'],['oiii','OIII (nebula)'],['hbeta','H-beta (nebula)'],['lp','Light-pollution broadband'],['moon','Moon / neutral density'],['solar','Solar, white-light (full aperture)'],['color','Color / planetary']];
+// Where Starcast opens without a home spot: the geographic center of the contiguous US, near Lebanon, Kansas.
+// (The last spot clicked isn't reopened; set a saved spot as Home to open there.)
+const DEFAULT_SPOT = { lat:39.828, lon:-98.579, name:'Center of the lower 48 (near Lebanon, Kansas)', isDefault:true };
 const S = {
   times:[], ti:0, layer:'cloud',
   ov:Object.assign({night:true, Sun:false, Moon:false, Mercury:false, Venus:false, Mars:false, Jupiter:false, Saturn:true}, store.get('ov',{})),
-  grid:null, sel:store.get('sel',{lat:43.073, lon:-89.401, name:'Madison (example spot)'}), point:null, pointKey:'',
+  grid:null, sel:Object.assign({}, DEFAULT_SPOT), point:null, pointKey:'',
   saved:store.get('saved',[]), gear:store.get('gear',DEFAULT_GEAR), interests:Object.assign({},DEFAULT_INT,store.get('interests',{})),
   checks:store.get('checks',[]), checkOpen:false,
   units:store.get('units','F'), defBortle:store.get('defBortle',5), tab:'loc', night:0, showAll:false, calFilter:'all', red:false, playing:null,
@@ -2435,7 +2438,7 @@ function wirePanel(){
   b.querySelectorAll('[data-night]').forEach(x=>x.onclick=()=>{ S.night=+x.dataset.night; S.showAll=false; renderPanel(); const n=evaluate().nights[S.night]; if(n) setTime(n.start+Math.min(3,n.end-n.start-1)); });
   const sa=$('#showAll'); if(sa) sa.onclick=()=>{ S.showAll=!S.showAll; renderPanel(); };
   wireReport();
-  const save=$('#saveBtn'); if(save) save.onclick=()=>{ S.savingName = S.sel.name && !S.sel.name.includes('example') ? S.sel.name : ''; renderPanel(); const i=$('#saveName'); if(i) i.focus(); };
+  const save=$('#saveBtn'); if(save) save.onclick=()=>{ S.savingName = S.sel.name && !S.sel.isDefault ? S.sel.name : ''; renderPanel(); const i=$('#saveName'); if(i) i.focus(); };
   const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({cid:newId(), name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:bortleFor(S.sel), alerts:true}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
     $('#saveCancel').onclick=()=>{ S.savingName=null; renderPanel(); }; }
   const be=$('#bortleEdit'); if(be) be.onclick=()=>{ S.bortleOpen=!S.bortleOpen; renderPanel(); };
