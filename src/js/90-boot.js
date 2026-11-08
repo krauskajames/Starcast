@@ -9,6 +9,13 @@ refreshWeather(false);
 loadAurora();
 setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; refreshWeather(false); } }, 5*60e3);
 if(!MODE.embed){ registerSW(); initAccount(); }
+// Visitor stats (GoatCounter: no cookies, no personal data). The portfolio embed counts as its own page;
+// automated recordings aren't counted.
+if(!MODE.record && /^https:$/.test(location.protocol)){
+  window.goatcounter = MODE.embed ? { path: '/Starcast/embed' } : {};
+  const gc=document.createElement('script'); gc.async=true; gc.src='https://gc.zgo.at/count.js';
+  gc.dataset.goatcounter='https://krauskagis.goatcounter.com/count'; document.head.appendChild(gc);
+}
 // embed: turn slowly until someone drags or zooms. record: the capture script turns it frame by frame.
 if(MODE.embed && !MODE.record && !matchMedia('(prefers-reduced-motion: reduce)').matches){
   let last=performance.now(), on=true;

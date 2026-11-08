@@ -2318,7 +2318,7 @@ function panelSaved(){
   h += logHTML();
   h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a> · <a href="https://krauskagis.goatcounter.com" target="_blank" rel="noopener">Visitor stats</a></p>`;
 
   return h;
 }
@@ -4086,6 +4086,13 @@ refreshWeather(false);
 loadAurora();
 setInterval(()=>{ const h=Math.floor(Date.now()/3600000)*3600; if(h!==S.times[0]){ buildTimes(); S.eval=null; refreshWeather(false); } }, 5*60e3);
 if(!MODE.embed){ registerSW(); initAccount(); }
+// Visitor stats (GoatCounter: no cookies, no personal data). The portfolio embed counts as its own page;
+// automated recordings aren't counted.
+if(!MODE.record && /^https:$/.test(location.protocol)){
+  window.goatcounter = MODE.embed ? { path: '/Starcast/embed' } : {};
+  const gc=document.createElement('script'); gc.async=true; gc.src='https://gc.zgo.at/count.js';
+  gc.dataset.goatcounter='https://krauskagis.goatcounter.com/count'; document.head.appendChild(gc);
+}
 // embed: turn slowly until someone drags or zooms. record: the capture script turns it frame by frame.
 if(MODE.embed && !MODE.record && !matchMedia('(prefers-reduced-motion: reduce)').matches){
   let last=performance.now(), on=true;
