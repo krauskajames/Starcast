@@ -449,10 +449,6 @@ function draw(){
   S.saved.forEach(s=>{ const p=visiblePt([s.lon,s.lat]); if(!p) return;
     ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(Math.PI/4); ctx.fillStyle=PAL.saved; ctx.fillRect(-4,-4,8,8); ctx.restore();
     ctx.fillStyle=PAL.savedLabel; ctx.fillText(s.name,p[0]+8,p[1]); });
-  if(S.drive && S.drive.results){
-    ctx.font='600 12px "Geist", system-ui, sans-serif';
-    S.drive.results.forEach((d,i)=>{ const p=visiblePt([d.lon,d.lat]); if(!p) return; star(p[0],p[1],6,PAL.drive); if(r > baseScale*5){ ctx.fillStyle=PAL.drive; ctx.fillText(d.name.length>32?d.name.slice(0,30)+'…':d.name,p[0]+9,p[1]); } });
-  }
   // selection
   const sp = MODE.embed ? null : visiblePt([S.sel.lon,S.sel.lat]);
   if(sp){ ctx.beginPath(); ctx.arc(sp[0],sp[1],9,0,7); ctx.strokeStyle=PAL.sel; ctx.lineWidth=1.6; ctx.stroke();
@@ -658,6 +654,7 @@ function panelLoc(){
   if(n){
     h += `<div class="alert"><div class="h">Alert preview · ${esc(nightLabel(n))}</div><p>${esc(nightSummary(ev,n))}</p></div>`;
   }
+  h += reportHTML();
   h += `<div><h4>72-hour forecast</h4><div class="strip-wrap">${stripHTML(ev)}</div><p class="note">Tap a column to move the globe to that hour. Seeing and transparency are Starcast estimates from jet-stream wind, humidity, high cloud and aerosols.</p></div>`;
   // targets
   h += `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Worth seeing</h4>${S.gears.length>1?`<select id="gearPick" aria-label="Observe with" style="padding:3px 6px">${S.gears.map((g,i)=>`<option value="${i}" ${i===S.gearIdx?'selected':''}>${esc(g.name||g.kind)}</option>`).join('')}</select>`:''}<span class="sub">Sky: Bortle ${bort}${bortleSource(S.sel)==='estimated'?' (est.)':''} <button class="more" id="bortleEdit" style="padding:0;font-size:12px">change</button></span></div>`;
@@ -681,7 +678,6 @@ function panelLoc(){
   } else h += `<div class="empty">No darkness in the next 72 hours at this latitude.</div>`;
   h += `</div>`;
   if(nts.length && nts[S.night]) h += planHTML(ev, nts[S.night]) + eventsHTML(nts[S.night]);
-  h += driveHTML();
   if(S.interests.solar) h += solarHTML();
   return h;
 }
@@ -770,113 +766,6 @@ function updateNowCards(){
     + c('Moon', Math.round(mi.illum*100)+'%', moon.alt>0?`up ${Math.round(moon.alt)}°`:'set');
 }
 
-/* ---------------- where to go tonight ---------------- */
-S.drive = { radius: store.get('driveRadius', 60), busy:false, results:null, err:null, home:null, from:null };
-const onLand = (lat,lon) => inLand(lat,lon);
-function nightDarkHours(n, ev){ const h=[]; for(let i=n.start;i<n.end;i++) if(ev.per[i].sunAlt<-15) h.push(i); return h; }
-function siteStats(lat, lon, hrs){
-  const sqm = lpVal(lat,lon); const lp = C.lightPollution(lat,lon);
-  let sum=0, c=0; const ok=[];
-  hrs.forEach(i=>{ const v=gridVal('cloud',i,lat,lon); if(!isNaN(v)){ sum+=v; c++; } ok.push(!isNaN(v)&&v<30?1:0); });
-  const win = C.bestWindow(ok,1);
-  return { sqm: isNaN(sqm) ? (lp?lp.sqm:NaN) : sqm, bortle: lp?lp.bortle:null, cloud: c? sum/c : NaN, win: win ? {start:hrs[win.start], end:hrs[win.end-1]+1} : null };
-}
-const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-async function overpass(q){
-  let last;
-  for(const url of OVERPASS){
-    const ac=new AbortController(), timer=setTimeout(()=>ac.abort(), 35e3);
-    try{
-      const r=await fetch(url,{method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ac.signal});
-      clearTimeout(timer);
-      if(!r.ok){ last=new Error('HTTP '+r.status); continue; }
-      return await r.json();
-    }catch(e){ clearTimeout(timer); last=e; }
-  }
-  throw last || new Error('no Overpass server');
-}
-function placeKind(t){
-  const n=t.name||'';
-  if(t.dsp) return 'Dark-sky place';
-  if(/National Park/i.test(n)) return 'National park';
-  if(/State Park/i.test(n)) return 'State park';
-  if(/National Forest/i.test(n)) return 'National forest';
-  if(/State Forest/i.test(n)) return 'State forest';
-  if(/County (Park|Forest)/i.test(n)) return 'County park';
-  if(t.tags && t.tags.tourism==='camp_site') return 'Campground';
-  if(/Wilderness/i.test(n)) return 'Wilderness';
-  if(/Wildlife/i.test(n)) return 'Wildlife area';
-  if(/Natural Area|Nature|Preserve/i.test(n) || (t.tags&&t.tags.leisure==='nature_reserve')) return 'Natural area';
-  if(/Recreation Area/i.test(n)) return 'Recreation area';
-  return 'Public land';
-}
-async function findDrive(){
-  const ev = evaluate(), n = ev.nights[S.night];
-  const D = S.drive; D.err=null; D.note=null; D.results=null;
-  if(!n){ D.err='No darkness in the forecast window.'; renderPanel(); return; }
-  const hrs = nightDarkHours(n, ev);
-  if(!hrs.length){ D.err='The sky never gets fully dark that night.'; renderPanel(); return; }
-  D.busy=true; renderPanel();
-  const home = {lat:S.sel.lat, lon:S.sel.lon}, R = D.radius*1.609;
-  if(S.grid) { try{ await ensureTilesAround(home.lat, home.lon, R); }catch(e){} }
-  D.from = locName(); D.home = siteStats(home.lat, home.lon, hrs);
-  // 1. real, named public places within range (OpenStreetMap)
-  const around = `(around:${Math.round(R*1000)},${home.lat.toFixed(4)},${home.lon.toFixed(4)})`;
-  const q = `[out:json][timeout:40];(
-    nwr["leisure"="park"]["name"~"State Park|County Park|Recreation Area|National Park",i]${around};
-    nwr["boundary"~"^(protected_area|national_park)$"]["name"~"State Park|State Forest|National Forest|National Park|Wildlife|Natural Area|Recreation Area|Wilderness|Preserve|County Forest",i]${around};
-    nwr["leisure"="nature_reserve"]["name"~"State|National|Natural Area|Preserve|Wildlife",i]${around};
-    nwr["landuse"="forest"]["name"~"State Forest|National Forest|County Forest",i]${around};
-    nwr["tourism"="camp_site"]["name"]${around};
-  );out center tags 900;`;
-  let places=[];
-  try{
-    const j = await overpass(q);
-    places = (j.elements||[]).map(e=>({ name:e.tags&&e.tags.name, tags:e.tags||{}, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
-      .filter(x=>x.name && x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
-  }catch(e){ console.warn('Overpass failed', e); D.note='OpenStreetMap’s park search is busy right now, so only known dark-sky places are listed. Try again in a minute for parks and forests.'; }
-  // known dark-sky parks and observatories within range
-  SKYPLACES.filter(([nm])=>!/Observatory/.test(nm)).forEach(([nm,la,lo])=>{ if(C.kmBetween(home.lat,home.lon,la,lo)<=R) places.push({name:nm.replace(/ · .*/,''), lat:la, lon:lo, tags:{}, id:'dsp:'+nm, dsp:true}); });
-  // 2. keep the darkest point of each named place, then score
-  const byName=new Map();
-  places.forEach(pl=>{ const km=C.kmBetween(home.lat,home.lon,pl.lat,pl.lon); if(km>R || km<3) return;
-    const lp=C.lightPollution(pl.lat,pl.lon); pl.sqm = lp ? lp.sqm : 21; pl.km=km;
-    const key=pl.name.toLowerCase(); const prev=byName.get(key); if(!prev || pl.sqm>prev.sqm) byName.set(key,pl); });
-  const scored=[...byName.values()].map(pl=>{
-    const st=siteStats(pl.lat,pl.lon,hrs), dark=clamp((pl.sqm-18.5)/3.4,0,1);
-    const clear = isNaN(st.cloud) ? 0.7 : Math.pow(clamp((100-st.cloud)/100,0,1),1.2);
-    const kind=placeKind(pl), bonus = pl.dsp ? 1.25 : kind==='Campground' ? 1.08 : /park|forest|Wilderness/i.test(kind) ? 1.05 : 1;
-    return { name:pl.name, kind, lat:pl.lat, lon:pl.lon, km:pl.km, st, osm: pl.id.startsWith('dsp:') ? `https://www.openstreetmap.org/?mlat=${pl.lat}&mlon=${pl.lon}#map=12/${pl.lat}/${pl.lon}` : `https://www.openstreetmap.org/${pl.id}`,
-      hours:pl.tags.opening_hours||'', fee:pl.tags.fee||'', score: 100*clear*(0.25+0.75*dark)*bonus*(1-0.18*pl.km/R) };
-  }).sort((a,b)=>b.score-a.score);
-  const picked=[]; for(const r of scored){ if(picked.every(p=>C.kmBetween(p.lat,p.lon,r.lat,r.lon)>8)) picked.push(r); if(picked.length>=6) break; }
-  D.results = picked;
-  if(!picked.length) D.err = D.note ? D.note : `No named parks, forests or campgrounds found within ${D.radius} miles in OpenStreetMap. Try a larger range.`;
-  if(!S.grid || isNaN(D.home.cloud)) D.note = (D.note? D.note+' ':'') + 'No cloud forecast is loaded, so places are ranked by sky darkness and distance only.';
-  D.busy=false; renderPanel(); render();
-  addDriveTimes();
-}
-function driveHTML(){
-  const D=S.drive;
-  let h = `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Where to go</h4>
-    <span class="row"><select id="driveR" aria-label="Driving range">${[30,60,90,120].map(m=>`<option value="${m}" ${m===D.radius?'selected':''}>within ${m} mi</option>`).join('')}</select>
-    <button class="btn primary" id="driveGo" ${D.busy?'disabled':''}>${D.busy?'Searching…':'Find dark, clear spots'}</button></span></div>`;
-  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Finds named state and county parks, forests, natural areas, campgrounds and dark-sky places within range, ranked by sky darkness, clouds and distance ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
-  if(D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.err)}</p>`;
-  if(D.note && !D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.note)}</p>`;
-  if(D.results){
-    const hm = D.home;
-    h += `<p class="sub" style="margin:0 0 6px">From ${esc(D.from)}: Bortle ${hm.bortle??'?'}, ${isNaN(hm.cloud)?'no forecast':Math.round(hm.cloud)+'% cloud'} during full darkness.</p><ul class="tlist">`;
-    h += D.results.map((r,i)=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(r.name)}</b>
-      <span class="sub" style="white-space:normal">${esc(r.kind)} · ${esc(driveDetail(r))} · Bortle ${r.st.bortle??'?'} · ${isNaN(r.st.cloud)?'clouds unknown':Math.round(r.st.cloud)+'% cloud'}${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
-      <span class="row" style="margin-top:5px;gap:12px"><button class="more" data-dgo="${i}" style="padding:0">Show forecast</button>
-      <a class="more" style="padding:0" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat.toFixed(5)},${r.lon.toFixed(5)}" target="_blank" rel="noopener">Directions</a>
-      <a class="more" style="padding:0" href="${r.osm}" target="_blank" rel="noopener">Map</a></span></div></li>`).join('');
-    h += `</ul><p class="note">Many parks close at night (Wisconsin state parks, for example, usually close at 11 pm unless you have a campsite), so check hours and permits before you go. Park data © OpenStreetMap contributors.</p>`;
-  }
-  return h + `</div>`;
-}
-
 /* saved */
 function panelSaved(){
   let h = `<h2>Saved locations</h2>`;
@@ -892,7 +781,7 @@ function panelSaved(){
   h += logHTML();
   h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
 
   return h;
 }
@@ -1008,6 +897,7 @@ function wirePanel(){
   b.querySelectorAll('.strip .cell[data-i]').forEach(c=>c.onclick=()=>setTime(+c.dataset.i));
   b.querySelectorAll('[data-night]').forEach(x=>x.onclick=()=>{ S.night=+x.dataset.night; S.showAll=false; renderPanel(); const n=evaluate().nights[S.night]; if(n) setTime(n.start+Math.min(3,n.end-n.start-1)); });
   const sa=$('#showAll'); if(sa) sa.onclick=()=>{ S.showAll=!S.showAll; renderPanel(); };
+  wireReport();
   const save=$('#saveBtn'); if(save) save.onclick=()=>{ S.savingName = S.sel.name && !S.sel.name.includes('example') ? S.sel.name : ''; renderPanel(); const i=$('#saveName'); if(i) i.focus(); };
   const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({cid:newId(), name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:bortleFor(S.sel), alerts:true}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
     $('#saveCancel').onclick=()=>{ S.savingName=null; renderPanel(); }; }
@@ -1034,9 +924,6 @@ function wirePanel(){
   b.querySelectorAll('[data-ckdel]').forEach(x=>x.onclick=()=>{ S.checks=S.checks.filter(c=>c.id!==+x.dataset.ckdel); store.set('checks',S.checks); renderPanel(); });
   const cp=$('#ckCopy'); if(cp) cp.onclick=()=>{ const txt=checksTSV(), ta=$('#ckText'); ta.value=txt;
     navigator.clipboard.writeText(txt).then(()=>toast('Copied')).catch(()=>{ ta.hidden=false; ta.select(); toast('Select and copy the text below'); }); };
-  const dr=$('#driveR'); if(dr) dr.onchange=()=>{ S.drive.radius=+dr.value; store.set('driveRadius',S.drive.radius); };
-  const dg=$('#driveGo'); if(dg) dg.onclick=()=>findDrive();
-  b.querySelectorAll('[data-dgo]').forEach(x=>x.onclick=()=>{ const r=S.drive.results[+x.dataset.dgo]; selectLocation({lat:r.lat,lon:r.lon,name:r.name},{fly:true,tab:'loc'}); });
   const db=$('#defBortle'); if(db) db.onchange=()=>{ S.defBortle=+db.value; store.set('defBortle',S.defBortle); S.eval=null; };
   const un=$('#units'); if(un) un.onchange=()=>{ S.units=un.value; store.set('units',S.units); };
   b.querySelectorAll('[data-cf]').forEach(x=>x.onclick=()=>{ S.calFilter=x.dataset.cf; renderPanel(); });

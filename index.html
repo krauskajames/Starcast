@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#05080f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Starcast"><meta name="description" content="Astronomy viewing conditions on a globe, with forecasts tuned to your telescope."></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#05080f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"><meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Starcast"><meta name="description" content="Free stargazing forecasts for anywhere on Earth: clouds, seeing, transparency, aurora and what your telescope can see tonight."><link rel="canonical" href="https://krauskagis.com/Starcast/"><meta property="og:type" content="website"><meta property="og:site_name" content="Starcast"><meta property="og:title" content="Starcast: stargazing forecasts on a globe"><meta property="og:description" content="Free stargazing forecasts for anywhere on Earth: clouds, seeing, transparency, aurora and what your telescope can see tonight."><meta property="og:url" content="https://krauskagis.com/Starcast/"><meta property="og:image" content="https://krauskagis.com/media/starcast-globe.jpg"><meta name="twitter:card" content="summary_large_image"></head><body>
 <title>Starcast</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -229,6 +229,9 @@ label.f{display:flex;flex-direction:column;gap:5px;font-size:12.5px;color:var(--
 .ev .nt{font-size:12.5px;color:var(--muted);line-height:1.5;margin-top:2px}
 .tag{text-transform:capitalize;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--raise);color:var(--muted);border:1px solid var(--line)}
 .tag.planet,.tag.saved{background:var(--t-planet-bg);color:var(--t-planet-fg);border-color:transparent}.tag.meteor{background:var(--t-meteor-bg);color:var(--t-meteor-fg);border-color:transparent}.tag.moon{background:var(--t-moon-bg);color:var(--t-moon-fg);border-color:transparent}.tag.eclipse{background:var(--t-eclipse-bg);color:var(--t-eclipse-fg);border-color:transparent}.tag.mars{background:var(--t-mars-bg);color:var(--t-mars-fg);border-color:transparent}.tag.occultation{background:var(--t-eclipse-bg);color:var(--t-eclipse-fg);border-color:transparent}.tag.green{background:var(--t-green-bg);color:var(--t-green-fg);border-color:transparent}
+.report{border:1px solid var(--line);border-radius:var(--r-sm);background:var(--raise)}
+.report summary{cursor:pointer;padding:11px 14px;font-weight:600;font-size:13.5px;list-style-position:inside}
+.report .rbody{padding:0 14px 14px;display:flex;flex-direction:column;gap:12px}
 .fc{display:inline-block;margin-top:6px;font-size:12px;padding:3px 9px;border-radius:999px;background:var(--fc-bg);color:var(--fc-fg);border:1px solid var(--fc-line)}
 
 /* gear */
@@ -1983,10 +1986,6 @@ function draw(){
   S.saved.forEach(s=>{ const p=visiblePt([s.lon,s.lat]); if(!p) return;
     ctx.save(); ctx.translate(p[0],p[1]); ctx.rotate(Math.PI/4); ctx.fillStyle=PAL.saved; ctx.fillRect(-4,-4,8,8); ctx.restore();
     ctx.fillStyle=PAL.savedLabel; ctx.fillText(s.name,p[0]+8,p[1]); });
-  if(S.drive && S.drive.results){
-    ctx.font='600 12px "Geist", system-ui, sans-serif';
-    S.drive.results.forEach((d,i)=>{ const p=visiblePt([d.lon,d.lat]); if(!p) return; star(p[0],p[1],6,PAL.drive); if(r > baseScale*5){ ctx.fillStyle=PAL.drive; ctx.fillText(d.name.length>32?d.name.slice(0,30)+'…':d.name,p[0]+9,p[1]); } });
-  }
   // selection
   const sp = MODE.embed ? null : visiblePt([S.sel.lon,S.sel.lat]);
   if(sp){ ctx.beginPath(); ctx.arc(sp[0],sp[1],9,0,7); ctx.strokeStyle=PAL.sel; ctx.lineWidth=1.6; ctx.stroke();
@@ -2192,6 +2191,7 @@ function panelLoc(){
   if(n){
     h += `<div class="alert"><div class="h">Alert preview · ${esc(nightLabel(n))}</div><p>${esc(nightSummary(ev,n))}</p></div>`;
   }
+  h += reportHTML();
   h += `<div><h4>72-hour forecast</h4><div class="strip-wrap">${stripHTML(ev)}</div><p class="note">Tap a column to move the globe to that hour. Seeing and transparency are Starcast estimates from jet-stream wind, humidity, high cloud and aerosols.</p></div>`;
   // targets
   h += `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Worth seeing</h4>${S.gears.length>1?`<select id="gearPick" aria-label="Observe with" style="padding:3px 6px">${S.gears.map((g,i)=>`<option value="${i}" ${i===S.gearIdx?'selected':''}>${esc(g.name||g.kind)}</option>`).join('')}</select>`:''}<span class="sub">Sky: Bortle ${bort}${bortleSource(S.sel)==='estimated'?' (est.)':''} <button class="more" id="bortleEdit" style="padding:0;font-size:12px">change</button></span></div>`;
@@ -2215,7 +2215,6 @@ function panelLoc(){
   } else h += `<div class="empty">No darkness in the next 72 hours at this latitude.</div>`;
   h += `</div>`;
   if(nts.length && nts[S.night]) h += planHTML(ev, nts[S.night]) + eventsHTML(nts[S.night]);
-  h += driveHTML();
   if(S.interests.solar) h += solarHTML();
   return h;
 }
@@ -2304,113 +2303,6 @@ function updateNowCards(){
     + c('Moon', Math.round(mi.illum*100)+'%', moon.alt>0?`up ${Math.round(moon.alt)}°`:'set');
 }
 
-/* ---------------- where to go tonight ---------------- */
-S.drive = { radius: store.get('driveRadius', 60), busy:false, results:null, err:null, home:null, from:null };
-const onLand = (lat,lon) => inLand(lat,lon);
-function nightDarkHours(n, ev){ const h=[]; for(let i=n.start;i<n.end;i++) if(ev.per[i].sunAlt<-15) h.push(i); return h; }
-function siteStats(lat, lon, hrs){
-  const sqm = lpVal(lat,lon); const lp = C.lightPollution(lat,lon);
-  let sum=0, c=0; const ok=[];
-  hrs.forEach(i=>{ const v=gridVal('cloud',i,lat,lon); if(!isNaN(v)){ sum+=v; c++; } ok.push(!isNaN(v)&&v<30?1:0); });
-  const win = C.bestWindow(ok,1);
-  return { sqm: isNaN(sqm) ? (lp?lp.sqm:NaN) : sqm, bortle: lp?lp.bortle:null, cloud: c? sum/c : NaN, win: win ? {start:hrs[win.start], end:hrs[win.end-1]+1} : null };
-}
-const OVERPASS = ['https://overpass-api.de/api/interpreter','https://overpass.kumi.systems/api/interpreter','https://overpass.private.coffee/api/interpreter'];
-async function overpass(q){
-  let last;
-  for(const url of OVERPASS){
-    const ac=new AbortController(), timer=setTimeout(()=>ac.abort(), 35e3);
-    try{
-      const r=await fetch(url,{method:'POST', body:'data='+encodeURIComponent(q), headers:{'Content-Type':'application/x-www-form-urlencoded'}, signal:ac.signal});
-      clearTimeout(timer);
-      if(!r.ok){ last=new Error('HTTP '+r.status); continue; }
-      return await r.json();
-    }catch(e){ clearTimeout(timer); last=e; }
-  }
-  throw last || new Error('no Overpass server');
-}
-function placeKind(t){
-  const n=t.name||'';
-  if(t.dsp) return 'Dark-sky place';
-  if(/National Park/i.test(n)) return 'National park';
-  if(/State Park/i.test(n)) return 'State park';
-  if(/National Forest/i.test(n)) return 'National forest';
-  if(/State Forest/i.test(n)) return 'State forest';
-  if(/County (Park|Forest)/i.test(n)) return 'County park';
-  if(t.tags && t.tags.tourism==='camp_site') return 'Campground';
-  if(/Wilderness/i.test(n)) return 'Wilderness';
-  if(/Wildlife/i.test(n)) return 'Wildlife area';
-  if(/Natural Area|Nature|Preserve/i.test(n) || (t.tags&&t.tags.leisure==='nature_reserve')) return 'Natural area';
-  if(/Recreation Area/i.test(n)) return 'Recreation area';
-  return 'Public land';
-}
-async function findDrive(){
-  const ev = evaluate(), n = ev.nights[S.night];
-  const D = S.drive; D.err=null; D.note=null; D.results=null;
-  if(!n){ D.err='No darkness in the forecast window.'; renderPanel(); return; }
-  const hrs = nightDarkHours(n, ev);
-  if(!hrs.length){ D.err='The sky never gets fully dark that night.'; renderPanel(); return; }
-  D.busy=true; renderPanel();
-  const home = {lat:S.sel.lat, lon:S.sel.lon}, R = D.radius*1.609;
-  if(S.grid) { try{ await ensureTilesAround(home.lat, home.lon, R); }catch(e){} }
-  D.from = locName(); D.home = siteStats(home.lat, home.lon, hrs);
-  // 1. real, named public places within range (OpenStreetMap)
-  const around = `(around:${Math.round(R*1000)},${home.lat.toFixed(4)},${home.lon.toFixed(4)})`;
-  const q = `[out:json][timeout:40];(
-    nwr["leisure"="park"]["name"~"State Park|County Park|Recreation Area|National Park",i]${around};
-    nwr["boundary"~"^(protected_area|national_park)$"]["name"~"State Park|State Forest|National Forest|National Park|Wildlife|Natural Area|Recreation Area|Wilderness|Preserve|County Forest",i]${around};
-    nwr["leisure"="nature_reserve"]["name"~"State|National|Natural Area|Preserve|Wildlife",i]${around};
-    nwr["landuse"="forest"]["name"~"State Forest|National Forest|County Forest",i]${around};
-    nwr["tourism"="camp_site"]["name"]${around};
-  );out center tags 900;`;
-  let places=[];
-  try{
-    const j = await overpass(q);
-    places = (j.elements||[]).map(e=>({ name:e.tags&&e.tags.name, tags:e.tags||{}, lat:e.lat ?? (e.center&&e.center.lat), lon:e.lon ?? (e.center&&e.center.lon), id:e.type+'/'+e.id }))
-      .filter(x=>x.name && x.lat!=null && !/^(private|no)$/.test(x.tags.access||''));
-  }catch(e){ console.warn('Overpass failed', e); D.note='OpenStreetMap’s park search is busy right now, so only known dark-sky places are listed. Try again in a minute for parks and forests.'; }
-  // known dark-sky parks and observatories within range
-  SKYPLACES.filter(([nm])=>!/Observatory/.test(nm)).forEach(([nm,la,lo])=>{ if(C.kmBetween(home.lat,home.lon,la,lo)<=R) places.push({name:nm.replace(/ · .*/,''), lat:la, lon:lo, tags:{}, id:'dsp:'+nm, dsp:true}); });
-  // 2. keep the darkest point of each named place, then score
-  const byName=new Map();
-  places.forEach(pl=>{ const km=C.kmBetween(home.lat,home.lon,pl.lat,pl.lon); if(km>R || km<3) return;
-    const lp=C.lightPollution(pl.lat,pl.lon); pl.sqm = lp ? lp.sqm : 21; pl.km=km;
-    const key=pl.name.toLowerCase(); const prev=byName.get(key); if(!prev || pl.sqm>prev.sqm) byName.set(key,pl); });
-  const scored=[...byName.values()].map(pl=>{
-    const st=siteStats(pl.lat,pl.lon,hrs), dark=clamp((pl.sqm-18.5)/3.4,0,1);
-    const clear = isNaN(st.cloud) ? 0.7 : Math.pow(clamp((100-st.cloud)/100,0,1),1.2);
-    const kind=placeKind(pl), bonus = pl.dsp ? 1.25 : kind==='Campground' ? 1.08 : /park|forest|Wilderness/i.test(kind) ? 1.05 : 1;
-    return { name:pl.name, kind, lat:pl.lat, lon:pl.lon, km:pl.km, st, osm: pl.id.startsWith('dsp:') ? `https://www.openstreetmap.org/?mlat=${pl.lat}&mlon=${pl.lon}#map=12/${pl.lat}/${pl.lon}` : `https://www.openstreetmap.org/${pl.id}`,
-      hours:pl.tags.opening_hours||'', fee:pl.tags.fee||'', score: 100*clear*(0.25+0.75*dark)*bonus*(1-0.18*pl.km/R) };
-  }).sort((a,b)=>b.score-a.score);
-  const picked=[]; for(const r of scored){ if(picked.every(p=>C.kmBetween(p.lat,p.lon,r.lat,r.lon)>8)) picked.push(r); if(picked.length>=6) break; }
-  D.results = picked;
-  if(!picked.length) D.err = D.note ? D.note : `No named parks, forests or campgrounds found within ${D.radius} miles in OpenStreetMap. Try a larger range.`;
-  if(!S.grid || isNaN(D.home.cloud)) D.note = (D.note? D.note+' ':'') + 'No cloud forecast is loaded, so places are ranked by sky darkness and distance only.';
-  D.busy=false; renderPanel(); render();
-  addDriveTimes();
-}
-function driveHTML(){
-  const D=S.drive;
-  let h = `<div><div class="row" style="justify-content:space-between;margin-bottom:8px"><h4 style="margin:0">Where to go</h4>
-    <span class="row"><select id="driveR" aria-label="Driving range">${[30,60,90,120].map(m=>`<option value="${m}" ${m===D.radius?'selected':''}>within ${m} mi</option>`).join('')}</select>
-    <button class="btn primary" id="driveGo" ${D.busy?'disabled':''}>${D.busy?'Searching…':'Find dark, clear spots'}</button></span></div>`;
-  if(!D.results && !D.err) h += `<p class="note" style="margin:0">Finds named state and county parks, forests, natural areas, campgrounds and dark-sky places within range, ranked by sky darkness, clouds and distance ${esc(nightLabel(evaluate().nights[S.night]||{start:0}).toLowerCase())}.</p>`;
-  if(D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.err)}</p>`;
-  if(D.note && !D.err) h += `<p class="note" style="margin:0 0 6px;color:var(--warn)">${esc(D.note)}</p>`;
-  if(D.results){
-    const hm = D.home;
-    h += `<p class="sub" style="margin:0 0 6px">From ${esc(D.from)}: Bortle ${hm.bortle??'?'}, ${isNaN(hm.cloud)?'no forecast':Math.round(hm.cloud)+'% cloud'} during full darkness.</p><ul class="tlist">`;
-    h += D.results.map((r,i)=>`<li class="sv" style="align-items:flex-start"><div class="info"><b>${esc(r.name)}</b>
-      <span class="sub" style="white-space:normal">${esc(r.kind)} · ${esc(driveDetail(r))} · Bortle ${r.st.bortle??'?'} · ${isNaN(r.st.cloud)?'clouds unknown':Math.round(r.st.cloud)+'% cloud'}${r.st.win?` · clear ${rangeText(r.st.win.start,r.st.win.end)}`:''}</span>
-      <span class="row" style="margin-top:5px;gap:12px"><button class="more" data-dgo="${i}" style="padding:0">Show forecast</button>
-      <a class="more" style="padding:0" href="https://www.google.com/maps/dir/?api=1&destination=${r.lat.toFixed(5)},${r.lon.toFixed(5)}" target="_blank" rel="noopener">Directions</a>
-      <a class="more" style="padding:0" href="${r.osm}" target="_blank" rel="noopener">Map</a></span></div></li>`).join('');
-    h += `</ul><p class="note">Many parks close at night (Wisconsin state parks, for example, usually close at 11 pm unless you have a campsite), so check hours and permits before you go. Park data © OpenStreetMap contributors.</p>`;
-  }
-  return h + `</div>`;
-}
-
 /* saved */
 function panelSaved(){
   let h = `<h2>Saved locations</h2>`;
@@ -2426,7 +2318,7 @@ function panelSaved(){
   h += logHTML();
   h += alertsHTML();
   h += checksHTML();
-  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Park data © OpenStreetMap contributors; driving times by OSRM. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
+  h += `<p class="note">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noopener">Open-Meteo.com</a> (CC BY 4.0), including Copernicus CAMS aerosol forecasts. Worldwide map forecast from the NOAA Global Forecast System (GFS). Aurora forecasts from NOAA SWPC. Satellite orbits from CelesTrak. Sky positions by Astronomy Engine and satellite.js. Stars and constellations from d3-celestial (Olaf Frohn). Maps from Natural Earth.</p><p class="note"><a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a> · <a href="terms.html" target="_blank" rel="noopener">Terms of Service</a></p>`;
 
   return h;
 }
@@ -2542,6 +2434,7 @@ function wirePanel(){
   b.querySelectorAll('.strip .cell[data-i]').forEach(c=>c.onclick=()=>setTime(+c.dataset.i));
   b.querySelectorAll('[data-night]').forEach(x=>x.onclick=()=>{ S.night=+x.dataset.night; S.showAll=false; renderPanel(); const n=evaluate().nights[S.night]; if(n) setTime(n.start+Math.min(3,n.end-n.start-1)); });
   const sa=$('#showAll'); if(sa) sa.onclick=()=>{ S.showAll=!S.showAll; renderPanel(); };
+  wireReport();
   const save=$('#saveBtn'); if(save) save.onclick=()=>{ S.savingName = S.sel.name && !S.sel.name.includes('example') ? S.sel.name : ''; renderPanel(); const i=$('#saveName'); if(i) i.focus(); };
   const sf=$('#saveForm'); if(sf){ sf.onsubmit=e=>{ e.preventDefault(); const nm=$('#saveName').value.trim()||'My spot'; S.saved.push({cid:newId(), name:nm, lat:S.sel.lat, lon:S.sel.lon, bortle:bortleFor(S.sel), alerts:true}); store.set('saved',S.saved); S.savingName=null; toast(`Saved “${nm}”`); renderPanel(); render(); };
     $('#saveCancel').onclick=()=>{ S.savingName=null; renderPanel(); }; }
@@ -2568,9 +2461,6 @@ function wirePanel(){
   b.querySelectorAll('[data-ckdel]').forEach(x=>x.onclick=()=>{ S.checks=S.checks.filter(c=>c.id!==+x.dataset.ckdel); store.set('checks',S.checks); renderPanel(); });
   const cp=$('#ckCopy'); if(cp) cp.onclick=()=>{ const txt=checksTSV(), ta=$('#ckText'); ta.value=txt;
     navigator.clipboard.writeText(txt).then(()=>toast('Copied')).catch(()=>{ ta.hidden=false; ta.select(); toast('Select and copy the text below'); }); };
-  const dr=$('#driveR'); if(dr) dr.onchange=()=>{ S.drive.radius=+dr.value; store.set('driveRadius',S.drive.radius); };
-  const dg=$('#driveGo'); if(dg) dg.onclick=()=>findDrive();
-  b.querySelectorAll('[data-dgo]').forEach(x=>x.onclick=()=>{ const r=S.drive.results[+x.dataset.dgo]; selectLocation({lat:r.lat,lon:r.lon,name:r.name},{fly:true,tab:'loc'}); });
   const db=$('#defBortle'); if(db) db.onchange=()=>{ S.defBortle=+db.value; store.set('defBortle',S.defBortle); S.eval=null; };
   const un=$('#units'); if(un) un.onchange=()=>{ S.units=un.value; store.set('units',S.units); };
   b.querySelectorAll('[data-cf]').forEach(x=>x.onclick=()=>{ S.calFilter=x.dataset.cf; renderPanel(); });
@@ -3856,7 +3746,7 @@ function wireEvents(b){
 }
 
 /* ---- 70-app.js ---- */
-/* Forecast confidence (model agreement), drive times, settings backup, home-screen install. */
+/* Forecast confidence (model agreement), settings backup, home-screen install. */
 
 /* --- forecast confidence: compare three global models for the selected spot --- */
 const MODELS = [['gfs_seamless','US (GFS)'],['ecmwf_ifs025','European (ECMWF)'],['gem_seamless','Canadian (GEM)']];
@@ -3887,26 +3777,6 @@ function confidenceText(n){
   if(!c) return '';
   const avg=worst/c;
   return avg<20 ? 'The US, European and Canadian models agree, so this forecast is fairly reliable.' : avg<40 ? 'The forecast models differ somewhat on clouds; check again closer to dark.' : 'The forecast models disagree a lot about clouds tonight; treat this forecast with caution.';
-}
-
-/* --- driving times (OSRM public router) and park opening hours --- */
-async function addDriveTimes(){
-  const D=S.drive; if(!D.results||!D.results.length) return;
-  try{
-    const pts=[[S.sel.lon,S.sel.lat]].concat(D.results.map(r=>[r.lon,r.lat])).map(p=>p[0].toFixed(5)+','+p[1].toFixed(5)).join(';');
-    const j=await getJSON(`https://router.project-osrm.org/table/v1/driving/${pts}?sources=0&annotations=duration,distance`);
-    if(j.code!=='Ok') return;
-    D.results.forEach((r,i)=>{ const s=j.durations[0][i+1], m=j.distances?j.distances[0][i+1]:null; if(s!=null){ r.driveMin=Math.round(s/60); r.driveMi=m!=null?Math.round(m/1609):null; } });
-    if(S.tab==='loc'){ const b=$('#pbody'), y=b.scrollTop; renderPanel(); b.scrollTop=y; }
-  }catch(e){ /* straight-line distance stays */ }
-}
-function driveDetail(r){
-  const parts=[];
-  if(r.driveMin!=null) parts.push(`${r.driveMin>=60?Math.floor(r.driveMin/60)+' h '+(r.driveMin%60)+' min':r.driveMin+' min'} drive${r.driveMi!=null?` (${r.driveMi} mi)`:''}`);
-  else parts.push(`~${Math.round(r.km*0.621)} mi straight line`);
-  if(r.hours) parts.push(`hours: ${r.hours}`);
-  if(r.fee==='yes') parts.push('fee or permit');
-  return parts.join(' · ');
 }
 
 /* --- settings backup and restore --- */
@@ -3951,6 +3821,77 @@ function installHTML(){
 }
 function wireInstall(){ const b=$('#installBtn'); if(b) b.onclick=async()=>{ if(!installEvt) return; installEvt.prompt(); try{ await installEvt.userChoice; }catch(e){} installEvt=null; b.hidden=true; }; }
 
+/* ---- 72-reports.js ---- */
+/* Sky reports: observers tell Starcast what the sky really looks like, and the report is stored
+   with what Starcast forecast for that spot and hour (table sky_reports, supabase/schema.sql).
+   Anyone can send one; nobody can read other people's. The totals feed the accuracy numbers. */
+const REPORT = { open:false, cloud:null, transp:'', seeing:'', note:'', busy:false, msg:'', err:false };
+const CLOUD_CHOICES = [[0,'Clear'],[25,'Mostly clear'],[50,'Partly cloudy'],[75,'Mostly cloudy'],[100,'Overcast']];
+const REPORT_GAP = 15*60e3; // one report per device every 15 minutes
+
+function reportsOn(){ return !MODE.embed && ACC.on && !!ACC.client; }
+function reportHTML(){
+  if(!reportsOn()) return '';
+  const last = store.get('lastReport', 0), wait = last + REPORT_GAP - Date.now();
+  const opt = (v,l,cur) => `<option value="${v}" ${String(cur)===String(v)?'selected':''}>${l}</option>`;
+  let h = `<details class="report" ${REPORT.open?'open':''} id="reportBox"><summary>Report your sky right now</summary><div class="rbody">`;
+  if(wait > 0 && !REPORT.msg){
+    h += `<p class="note" style="margin:0">Thanks for your last report. You can send another in ${Math.ceil(wait/60e3)} min.</p>`;
+  } else if(REPORT.msg && !REPORT.err){
+    h += `<p class="note" style="margin:0;color:var(--good)">${esc(REPORT.msg)}</p>`;
+  } else {
+    h += `<p class="note" style="margin:0">What does the sky look like at ${esc(locName())} now? Your answer is saved next to Starcast’s forecast for this hour, so the forecast can be checked and improved.</p>
+      <div class="nights" role="group" aria-label="Cloud cover">${CLOUD_CHOICES.map(([v,l])=>`<button type="button" data-rcloud="${v}" aria-pressed="${REPORT.cloud===v}">${l}</button>`).join('')}</div>
+      <div class="form">
+        <label class="f">Transparency (optional)<select id="rTransp">${opt('','Not sure',REPORT.transp)}${[[5,'5 · Excellent, Milky Way crisp'],[4,'4 · Good'],[3,'3 · Average'],[2,'2 · Poor, hazy'],[1,'1 · Very poor']].map(([v,l])=>opt(v,l,REPORT.transp)).join('')}</select></label>
+        <label class="f">Seeing (optional)<select id="rSeeing">${opt('','Not sure',REPORT.seeing)}${[[5,'5 · Steady, fine detail'],[4,'4 · Good'],[3,'3 · Average'],[2,'2 · Poor, shimmering'],[1,'1 · Boiling']].map(([v,l])=>opt(v,l,REPORT.seeing)).join('')}</select></label>
+        <label class="f wide">Note (optional)<input type="text" id="rNote" maxlength="280" value="${esc(REPORT.note)}" placeholder="e.g. thin haze to the south"></label>
+      </div>
+      <div class="row"><button class="btn primary" id="rSend" ${REPORT.cloud==null||REPORT.busy?'disabled':''}>${REPORT.busy?'Sending…':'Send report'}</button>
+      ${REPORT.err ? `<span class="note" style="color:var(--bad)">${esc(REPORT.msg)}</span>` : ''}</div>
+      <p class="note" style="margin:0">The location is rounded to about 10 km. No name or email is attached unless you're signed in.</p>`;
+  }
+  return h + `</div></details>`;
+}
+function wireReport(){
+  const box=$('#reportBox'); if(!box) return;
+  box.ontoggle=()=>{ REPORT.open=box.open; };
+  box.querySelectorAll('[data-rcloud]').forEach(b=>b.onclick=()=>{ REPORT.cloud=+b.dataset.rcloud; REPORT.err=false; REPORT.msg=''; keepScroll(renderPanel); });
+  const t=$('#rTransp'); if(t) t.onchange=()=>{ REPORT.transp=t.value; };
+  const s=$('#rSeeing'); if(s) s.onchange=()=>{ REPORT.seeing=s.value; };
+  const n=$('#rNote'); if(n) n.oninput=()=>{ REPORT.note=n.value; };
+  const go=$('#rSend'); if(go) go.onclick=sendReport;
+}
+function keepScroll(fn){ const b=$('#pbody'), y=b?b.scrollTop:0; fn(); if(b) b.scrollTop=y; }
+async function sendReport(){
+  if(REPORT.cloud==null || REPORT.busy) return;
+  const i = nowIndex(), w = wxAt(i);
+  const num = v => (v==null || isNaN(v)) ? null : Math.round(v*10)/10;
+  const row = {
+    observed_at: new Date().toISOString(),
+    lat: Math.round(S.sel.lat*10)/10, lon: Math.round(S.sel.lon*10)/10,
+    cloud: REPORT.cloud,
+    transparency: REPORT.transp ? +REPORT.transp : null,
+    seeing: REPORT.seeing ? +REPORT.seeing : null,
+    note: REPORT.note.trim().slice(0,280) || null,
+    fc_cloud: w ? num(w.cloud) : null, fc_seeing: w ? num(w.seeing) : null, fc_transp: w ? num(w.transp) : null,
+    fc_source: S.point ? 'point' : GL.ready ? 'gfs' : S.grid ? 'grid' : null,
+    app_version: 'v3.6'
+  };
+  REPORT.busy=true; REPORT.err=false; REPORT.msg=''; keepScroll(renderPanel);
+  try{
+    const { error } = await ACC.client.from('sky_reports').insert(row);
+    if(error) throw error;
+    store.set('lastReport', Date.now());
+    Object.assign(REPORT, { cloud:null, transp:'', seeing:'', note:'', msg:'Thanks! Your report was sent.' });
+    toast('Report sent');
+  }catch(e){
+    console.warn('Sky report failed', e);
+    REPORT.err=true; REPORT.msg='The report couldn’t be sent. Check your connection and try again.';
+  }
+  REPORT.busy=false; keepScroll(renderPanel);
+}
+
 /* ---- 75-account.js ---- */
 /* Accounts: sign in with Google (Supabase Auth) and keep saved spots, gear, the observing log
    and settings in sync across devices. Without an account Starcast works exactly as before,
@@ -3965,7 +3906,13 @@ function wireInstall(){ const b=$('#installBtn'); if(b) b.onclick=async()=>{ if(
 const SUPABASE_URL = 'https://lqlkyanlnmszxyuyqjyd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_QYdjcr5V44YgWq676MwGFQ_aYkfGlGB';
 
-const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity','frameBarlow'];
+// Google's own "Sign in with Google" button. With a client ID set, sign-in happens on krauskagis.com
+// and Google's screen names this site, not the Supabase address; the ID token is then handed to
+// Supabase (signInWithIdToken). Leave empty to use Supabase's redirect sign-in instead.
+// The client ID is public by design (Google Auth Platform -> Clients); never put the client secret here.
+const GOOGLE_CLIENT_ID = '';
+
+const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','layerOpacity','frameBarlow'];
 const LIST_IDS = { saved:'cid', gears:'id', log:'id', checks:'id' };
 const ACC = { on: !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase!=='undefined' && /^https?:$/.test(location.protocol)),
   client:null, user:null, status:'', dirty:new Set(), timer:null, ready:false, menu:false, confirmDelete:false };
@@ -4050,6 +3997,37 @@ async function deleteCloudData(){
   }catch(e){ setAccStatus('Delete failed: '+(e.message||e)); }
 }
 
+/* --- Google Identity Services button (see GOOGLE_CLIENT_ID) --- */
+let gsiLoad = null;
+function loadGsi(){
+  if(!gsiLoad) gsiLoad = new Promise((ok, no)=>{
+    const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true;
+    s.onload=()=>ok(window.google); s.onerror=()=>no(new Error('Google sign-in could not load'));
+    document.head.appendChild(s);
+  });
+  return gsiLoad;
+}
+async function sha256hex(t){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function renderGsiButton(el){
+  try{
+    const g = await loadGsi();
+    // a fresh nonce for every sign-in: Google signs the hashed one into its token, Supabase checks it against the raw one
+    const raw = [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    g.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, nonce: await sha256hex(raw), use_fedcm_for_prompt: true, auto_select: false,
+      callback: async resp => {
+        setAccStatus('Signing in…');
+        const { error } = await ACC.client.auth.signInWithIdToken({ provider:'google', token: resp.credential, nonce: raw });
+        if(error){ console.warn(error); setAccStatus('Sign-in failed: '+(error.message||error)); }
+      } });
+    if(!el.isConnected) return;
+    const dark = document.documentElement.dataset.theme==='dark' || (document.documentElement.dataset.theme!=='light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    g.accounts.id.renderButton(el, { type:'standard', theme: dark ? 'filled_black' : 'outline', size:'large', text:'signin_with', shape:'pill', width: 268, logo_alignment:'left' });
+  }catch(e){ console.warn(e); ACC.gsiFailed = true; renderAccount(); }
+}
+
 function renderAccount(){
   const btn=$('#accountBtn'), pop=$('#accountPop'); if(!btn||!pop) return;
   btn.hidden=!ACC.on;
@@ -4061,7 +4039,7 @@ function renderAccount(){
   if(!ACC.menu) return;
   if(!u){
     pop.innerHTML = `<p class="note" style="margin:0 0 10px">Sign in to keep your saved spots, gear, observing log and settings on every device. Without an account, they stay in this browser.</p>
-      <button class="btn primary gbtn" id="accGoogle"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button>
+      ${GOOGLE_CLIENT_ID && !ACC.gsiFailed ? `<div id="gsiBtn" style="min-height:40px"></div>` : `<button class="btn primary gbtn" id="accGoogle"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button>`}
       <p class="note" style="margin:8px 0 0">By signing in you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
       ${ACC.status?`<p class="note" style="margin:8px 0 0">${esc(ACC.status)}</p>`:''}`;
   } else {
@@ -4073,6 +4051,7 @@ function renderAccount(){
         : `<button class="more" id="accDel" style="margin-top:8px;font-size:12px">Delete my data from the cloud…</button>`}`;
   }
   const g=$('#accGoogle'); if(g) g.onclick=signIn;
+  const gs=$('#gsiBtn'); if(gs) renderGsiButton(gs);
   const o=$('#accOut'); if(o) o.onclick=signOut;
   const d=$('#accDel'); if(d) d.onclick=()=>{ ACC.confirmDelete=true; renderAccount(); };
   const dy=$('#accDelYes'); if(dy) dy.onclick=deleteCloudData;

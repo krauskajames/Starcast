@@ -11,7 +11,13 @@
 const SUPABASE_URL = 'https://lqlkyanlnmszxyuyqjyd.supabase.co';
 const SUPABASE_ANON_KEY = 'sb_publishable_QYdjcr5V44YgWq676MwGFQ_aYkfGlGB';
 
-const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','driveRadius','layerOpacity','frameBarlow'];
+// Google's own "Sign in with Google" button. With a client ID set, sign-in happens on krauskagis.com
+// and Google's screen names this site, not the Supabase address; the ID token is then handed to
+// Supabase (signInWithIdToken). Leave empty to use Supabase's redirect sign-in instead.
+// The client ID is public by design (Google Auth Platform -> Clients); never put the client secret here.
+const GOOGLE_CLIENT_ID = '';
+
+const SYNC_KEYS = ['saved','gears','gearIdx','interests','log','checks','alertRules','units','defBortle','theme','basemap','layer','ov','photoIso','frameTarget','jupFlip','layerOpacity','frameBarlow'];
 const LIST_IDS = { saved:'cid', gears:'id', log:'id', checks:'id' };
 const ACC = { on: !!(SUPABASE_URL && SUPABASE_ANON_KEY && typeof supabase!=='undefined' && /^https?:$/.test(location.protocol)),
   client:null, user:null, status:'', dirty:new Set(), timer:null, ready:false, menu:false, confirmDelete:false };
@@ -96,6 +102,37 @@ async function deleteCloudData(){
   }catch(e){ setAccStatus('Delete failed: '+(e.message||e)); }
 }
 
+/* --- Google Identity Services button (see GOOGLE_CLIENT_ID) --- */
+let gsiLoad = null;
+function loadGsi(){
+  if(!gsiLoad) gsiLoad = new Promise((ok, no)=>{
+    const s=document.createElement('script'); s.src='https://accounts.google.com/gsi/client'; s.async=true;
+    s.onload=()=>ok(window.google); s.onerror=()=>no(new Error('Google sign-in could not load'));
+    document.head.appendChild(s);
+  });
+  return gsiLoad;
+}
+async function sha256hex(t){
+  const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t));
+  return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+async function renderGsiButton(el){
+  try{
+    const g = await loadGsi();
+    // a fresh nonce for every sign-in: Google signs the hashed one into its token, Supabase checks it against the raw one
+    const raw = [...crypto.getRandomValues(new Uint8Array(16))].map(x=>x.toString(16).padStart(2,'0')).join('');
+    g.accounts.id.initialize({ client_id: GOOGLE_CLIENT_ID, nonce: await sha256hex(raw), use_fedcm_for_prompt: true, auto_select: false,
+      callback: async resp => {
+        setAccStatus('Signing in…');
+        const { error } = await ACC.client.auth.signInWithIdToken({ provider:'google', token: resp.credential, nonce: raw });
+        if(error){ console.warn(error); setAccStatus('Sign-in failed: '+(error.message||error)); }
+      } });
+    if(!el.isConnected) return;
+    const dark = document.documentElement.dataset.theme==='dark' || (document.documentElement.dataset.theme!=='light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    g.accounts.id.renderButton(el, { type:'standard', theme: dark ? 'filled_black' : 'outline', size:'large', text:'signin_with', shape:'pill', width: 268, logo_alignment:'left' });
+  }catch(e){ console.warn(e); ACC.gsiFailed = true; renderAccount(); }
+}
+
 function renderAccount(){
   const btn=$('#accountBtn'), pop=$('#accountPop'); if(!btn||!pop) return;
   btn.hidden=!ACC.on;
@@ -107,7 +144,7 @@ function renderAccount(){
   if(!ACC.menu) return;
   if(!u){
     pop.innerHTML = `<p class="note" style="margin:0 0 10px">Sign in to keep your saved spots, gear, observing log and settings on every device. Without an account, they stay in this browser.</p>
-      <button class="btn primary gbtn" id="accGoogle"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button>
+      ${GOOGLE_CLIENT_ID && !ACC.gsiFailed ? `<div id="gsiBtn" style="min-height:40px"></div>` : `<button class="btn primary gbtn" id="accGoogle"><svg width="16" height="16" viewBox="0 0 48 48" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="m6.3 14.7 6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.9 1.2 8 3.1l5.7-5.7C34.1 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-7.9l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>Sign in with Google</button>`}
       <p class="note" style="margin:8px 0 0">By signing in you agree to the <a href="terms.html" target="_blank" rel="noopener">Terms</a> and <a href="privacy.html" target="_blank" rel="noopener">Privacy Policy</a>.</p>
       ${ACC.status?`<p class="note" style="margin:8px 0 0">${esc(ACC.status)}</p>`:''}`;
   } else {
@@ -119,6 +156,7 @@ function renderAccount(){
         : `<button class="more" id="accDel" style="margin-top:8px;font-size:12px">Delete my data from the cloud…</button>`}`;
   }
   const g=$('#accGoogle'); if(g) g.onclick=signIn;
+  const gs=$('#gsiBtn'); if(gs) renderGsiButton(gs);
   const o=$('#accOut'); if(o) o.onclick=signOut;
   const d=$('#accDel'); if(d) d.onclick=()=>{ ACC.confirmDelete=true; renderAccount(); };
   const dy=$('#accDelYes'); if(dy) dy.onclick=deleteCloudData;

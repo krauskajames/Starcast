@@ -45,7 +45,10 @@ const app = read(new URL('./src/app.html', import.meta.url))
   .replace('<!--APP-->', () => `<script>\n(function(){\n'use strict';\n${appJs.replaceAll('</script', '<\\/script')}\n})();\n</script>`);
 const head = '<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">'
   + '<link rel="manifest" href="manifest.webmanifest"><meta name="theme-color" content="#05080f"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png">'
-  + '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Starcast"><meta name="description" content="Astronomy viewing conditions on a globe, with forecasts tuned to your telescope.">';
+  + '<meta name="apple-mobile-web-app-capable" content="yes"><meta name="apple-mobile-web-app-title" content="Starcast"><meta name="description" content="Free stargazing forecasts for anywhere on Earth: clouds, seeing, transparency, aurora and what your telescope can see tonight.">'
+  + '<link rel="canonical" href="https://krauskagis.com/Starcast/"><meta property="og:type" content="website"><meta property="og:site_name" content="Starcast">'
+  + '<meta property="og:title" content="Starcast: stargazing forecasts on a globe"><meta property="og:description" content="Free stargazing forecasts for anywhere on Earth: clouds, seeing, transparency, aurora and what your telescope can see tonight.">'
+  + '<meta property="og:url" content="https://krauskagis.com/Starcast/"><meta property="og:image" content="https://krauskagis.com/media/starcast-globe.jpg"><meta name="twitter:card" content="summary_large_image">';
 const out = `<!doctype html>\n<html lang="en"><head>${head}</head><body>\n${app}\n</body></html>\n`;
 fs.writeFileSync(new URL('./index.html', import.meta.url), out);
 fs.copyFileSync(new URL('./src/core.js', import.meta.url), new URL('./alerts/core.js', import.meta.url));

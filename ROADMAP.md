@@ -2,7 +2,7 @@
 
 An astronomy viewing-conditions globe: earth.nullschool-style weather on a globe, ClearDarkSky-style forecasts, Stellarium-style sky knowledge, tuned to your own gear and interests.
 
-Last updated: October 23, 2026 · Current version: v3.5
+Last updated: October 23, 2026 · Current version: v3.6
 
 **Status key:** ✅ Done · 🔧 In progress · 🔜 Next up · 💡 Planned for later
 
@@ -76,9 +76,7 @@ Last updated: October 23, 2026 · Current version: v3.5
 |---|---|---|
 | Hourly strip: cloud, transparency, seeing, darkness, dew, wind, model agreement, aurora, temperature | ✅ | Model agreement added v3.0 |
 | Alert preview message | ✅ | Includes aurora and forecast confidence |
-| Where to go: darkest, clearest public land within 30–120 miles | ✅ | v2.0 |
-| Driving times and park opening hours for "Where to go" | ✅ | v3.0; OSRM routing, OpenStreetMap hours where listed |
-| "Where to go" lists only real named places: state and county parks, forests, natural areas, campgrounds, dark-sky parks | ✅ | v3.1; backup OpenStreetMap servers when the main one is busy |
+| Where to go: darkest, clearest public land within 30–120 miles | ❌ | Removed in v3.6: the free park search and routing servers were too unreliable |
 | Solar observing days (with a solar filter only) | ✅ | |
 | Sunspot and solar flare activity | ✅ | v3.3; today's Sun from NASA SDO and NOAA's latest X-ray flare, in Solar observing |
 
@@ -184,7 +182,7 @@ Asking Open-Meteo for a grid of forecast points from every visitor's browser wor
 | 0.5° worldwide files | 💡 | Four times the download; worth it once files load only for the area in view |
 | Global light pollution from NASA Black Marble (VIIRS) night lights instead of the city list | 🔜 | Catches small towns everywhere |
 | Wind-particle animation like nullschool, from the same wind data | 💡 | Natural next step once winds are gridded |
-| HRRR 3 km data for the US in the pipeline | 💡 | Sharper clouds for the "Where to go" search |
+| HRRR 3 km data for the US in the pipeline | 💡 | Sharper clouds for the US |
 
 ## 14. Portfolio
 
@@ -199,6 +197,7 @@ Asking Open-Meteo for a grid of forecast points from every visitor's browser wor
 
 ## Version history
 
+- **v3.6 (Nov 8, 2026):** Starcast goes public: Report your sky (observations stored next to the forecast, public accuracy totals), Google's own sign-in button so the sign-in screen names krauskagis.com, open to search engines with sharing previews; "Where to go" removed.
 - **v3.5 (Oct 26, 2026):** Refreshed look: Geist type in sentence case, frosted-glass panels and a floating time bar, segmented tabs, icon buttons for theme and night vision, flatter lists and stat rows.
 - **v3.4.1 (Oct 23, 2026):** The globe opens centered on the contiguous US.
 - **v3.4 (Oct 23, 2026):** Worldwide weather map from NOAA GFS (0.5° averaged to 1°, smoothed with cubic B-splines), prepared every 6 hours by GitHub Actions and published with the site; zoomed-in detail tiles anywhere on land. Embed and record modes and a portfolio case study.

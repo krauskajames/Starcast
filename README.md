@@ -22,7 +22,7 @@ Version 3.4 · October 2026 · Weather map layers, spot forecasts and sky inform
 - **Red view:** the plan one target at a time in large red text for use at the telescope. It keeps the screen awake.
 - **Sky chart:** your whole sky at the chosen hour, with constellations, planets, tonight's targets and your horizon.
 - **Tonight's events:** Jupiter's moons and their shadows (and when they cross the planet), Moon features along the terminator, and visible ISS and Tiangong passes.
-- **Where to go:** named state and county parks, forests, natural areas, campgrounds and dark-sky parks within 30–120 miles, ranked by sky darkness, clouds and distance, with driving times and opening hours where known.
+- **Report your sky:** tell Starcast what the sky really looks like (clouds, and optionally transparency and seeing). Reports are stored with the forecast for that hour, so its accuracy can be measured.
 - **Solar observing:** daytime clear spells, shown only once a certified solar filter is in your gear.
 
 **Planning and setup**
@@ -55,8 +55,6 @@ The line under the logo shows whether the forecast is live. "Sample weather" mea
 | Light pollution and Bortle class | Starcast estimate: a city-glow model (Walker's law with atmospheric extinction) over 224 North American cities |
 | Aurora | NOAA SWPC: 3-day Kp forecast, and the OVATION aurora map for the next hour or so |
 | Place search | Open-Meteo geocoding |
-| Parks, public land, opening hours | OpenStreetMap, through the Overpass API |
-| Driving times | OSRM public routing service |
 | Satellite orbits | CelesTrak |
 | Sun, Moon, planets, Jupiter's moons, events, occultations | Calculated in the browser with Astronomy Engine |
 | Satellite passes | Calculated in the browser with satellite.js |
@@ -117,7 +115,6 @@ If you sign in with Google, the same data is also stored in Starcast's Supabase 
 
 The app sends only the coordinates of spots you look at, to these services:
 - Open-Meteo, for forecasts and place search
-- OpenStreetMap's Overpass service and OSRM, when you search for places to go
 - NOAA and CelesTrak, which receive no location at all
 
 Alert settings live only in your GitHub secret.
@@ -132,7 +129,7 @@ The site is published to GitHub Pages by a GitHub Actions workflow (`.github/wor
 |---|---|
 | `index.html` | The whole app in one file, built from `src/`. This is what GitHub Pages serves |
 | `src/app.html` | The page layout and styles |
-| `src/js/*.js` | The app's code, in modules: main (globe, panels), weather, base maps, locations, telescope (plan, red view, sky chart, log), gear, events, app (confidence, drive times, backup, install), boot |
+| `src/js/*.js` | The app's code, in modules: main (globe, panels), weather, base maps, locations, telescope (plan, red view, sky chart, log), gear, events, app (confidence, backup, install), boot |
 | `src/core.js` | Starcast's astronomy, forecast and scoring engine, shared by the app and the alert job |
 | `build.mjs`, `package.json` | Build script: `npm install`, then `npm run build` rebuilds `index.html` |
 | `manifest.webmanifest`, `sw.js`, `icon-*.png` | Let Starcast install on a phone and open offline |
@@ -165,7 +162,6 @@ To change the app, edit the files in `src/` and run `npm run build` (needs Node.
 - Weather data and place search by [Open-Meteo.com](https://open-meteo.com/), licensed CC BY 4.0. Free use is for non-commercial purposes.
 - Aerosol forecasts from the Copernicus Atmosphere Monitoring Service (CAMS).
 - Aurora and Kp forecasts from the [NOAA Space Weather Prediction Center](https://www.swpc.noaa.gov/).
-- Park data © [OpenStreetMap](https://www.openstreetmap.org/copyright) contributors, through the Overpass API. Driving times from [OSRM](https://project-osrm.org/).
 - Satellite orbits from [CelesTrak](https://celestrak.org/).
 - Base map tiles: [OpenStreetMap](https://www.openstreetmap.org/copyright) (© OpenStreetMap contributors), [OpenTopoMap](https://opentopomap.org/) (CC-BY-SA), Esri World Imagery (© Esri, Maxar, Earthstar Geographics), [CARTO](https://carto.com/attributions) dark basemap, and NASA Black Marble night lights via [GIBS](https://www.earthdata.nasa.gov/gibs). Tiles are loaded only for what's on screen, as their usage policies ask.
 - [Astronomy Engine](https://github.com/cosinekitty/astronomy) by Don Cross (MIT License).

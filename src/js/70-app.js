@@ -1,4 +1,4 @@
-/* Forecast confidence (model agreement), drive times, settings backup, home-screen install. */
+/* Forecast confidence (model agreement), settings backup, home-screen install. */
 
 /* --- forecast confidence: compare three global models for the selected spot --- */
 const MODELS = [['gfs_seamless','US (GFS)'],['ecmwf_ifs025','European (ECMWF)'],['gem_seamless','Canadian (GEM)']];
@@ -29,26 +29,6 @@ function confidenceText(n){
   if(!c) return '';
   const avg=worst/c;
   return avg<20 ? 'The US, European and Canadian models agree, so this forecast is fairly reliable.' : avg<40 ? 'The forecast models differ somewhat on clouds; check again closer to dark.' : 'The forecast models disagree a lot about clouds tonight; treat this forecast with caution.';
-}
-
-/* --- driving times (OSRM public router) and park opening hours --- */
-async function addDriveTimes(){
-  const D=S.drive; if(!D.results||!D.results.length) return;
-  try{
-    const pts=[[S.sel.lon,S.sel.lat]].concat(D.results.map(r=>[r.lon,r.lat])).map(p=>p[0].toFixed(5)+','+p[1].toFixed(5)).join(';');
-    const j=await getJSON(`https://router.project-osrm.org/table/v1/driving/${pts}?sources=0&annotations=duration,distance`);
-    if(j.code!=='Ok') return;
-    D.results.forEach((r,i)=>{ const s=j.durations[0][i+1], m=j.distances?j.distances[0][i+1]:null; if(s!=null){ r.driveMin=Math.round(s/60); r.driveMi=m!=null?Math.round(m/1609):null; } });
-    if(S.tab==='loc'){ const b=$('#pbody'), y=b.scrollTop; renderPanel(); b.scrollTop=y; }
-  }catch(e){ /* straight-line distance stays */ }
-}
-function driveDetail(r){
-  const parts=[];
-  if(r.driveMin!=null) parts.push(`${r.driveMin>=60?Math.floor(r.driveMin/60)+' h '+(r.driveMin%60)+' min':r.driveMin+' min'} drive${r.driveMi!=null?` (${r.driveMi} mi)`:''}`);
-  else parts.push(`~${Math.round(r.km*0.621)} mi straight line`);
-  if(r.hours) parts.push(`hours: ${r.hours}`);
-  if(r.fee==='yes') parts.push('fee or permit');
-  return parts.join(' · ');
 }
 
 /* --- settings backup and restore --- */

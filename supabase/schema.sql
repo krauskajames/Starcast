@@ -104,3 +104,93 @@ grant execute on function public.sync_saved_locations(jsonb) to authenticated;
 --     from public.saved_locations
 --    where extensions.st_dwithin(geom, extensions.st_makepoint(-89.40, 43.07)::extensions.geography, 100000)
 --    order by km;
+
+-------------------------------------------------------------------------------
+-- 4. Sky reports: what observers actually saw, stored next to what Starcast forecast for
+--    that place and hour. Anyone can send one (signed in or not); nobody can read other
+--    people's reports. The owner reads them all in the dashboard (Table Editor), and the
+--    public only sees totals through sky_report_stats().
+--    Locations are rounded to 0.1° (about 10 km) before they are stored.
+-------------------------------------------------------------------------------
+create table if not exists public.sky_reports (
+  id           bigint generated always as identity primary key,
+  created_at   timestamptz not null default now(),
+  user_id      uuid default auth.uid() references auth.users (id) on delete set null,
+  observed_at  timestamptz not null,
+  lat          numeric(4,1) not null check (lat between -90 and 90),
+  lon          numeric(4,1) not null check (lon between -180 and 180),
+  cloud        smallint not null check (cloud in (0, 25, 50, 75, 100)),
+  transparency smallint check (transparency between 1 and 5),
+  seeing       smallint check (seeing between 1 and 5),
+  note         text check (char_length(note) <= 280),
+  fc_cloud     real check (fc_cloud between 0 and 100),
+  fc_seeing    real check (fc_seeing between 0 and 5),
+  fc_transp    real check (fc_transp between 0 and 5),
+  fc_source    text check (char_length(fc_source) <= 20),
+  app_version  text check (char_length(app_version) <= 12)
+);
+
+-- Reports must describe the sky around now (not far past or future), and arrive rounded.
+create or replace function public.sky_reports_check()
+returns trigger
+language plpgsql
+set search_path = ''
+as $$
+begin
+  new.created_at := now();
+  if new.observed_at < now() - interval '3 hours' or new.observed_at > now() + interval '15 minutes' then
+    raise exception 'a sky report must be about the sky right now';
+  end if;
+  new.lat := round(new.lat, 1);
+  new.lon := round(new.lon, 1);
+  if new.user_id is distinct from (select auth.uid()) then
+    new.user_id := (select auth.uid());
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists sky_reports_check on public.sky_reports;
+create trigger sky_reports_check before insert on public.sky_reports
+  for each row execute function public.sky_reports_check();
+
+alter table public.sky_reports enable row level security;
+
+drop policy if exists "sky_reports: anyone can send" on public.sky_reports;
+create policy "sky_reports: anyone can send" on public.sky_reports
+  for insert to anon, authenticated
+  with check (true);
+
+drop policy if exists "sky_reports: read own" on public.sky_reports;
+create policy "sky_reports: read own" on public.sky_reports
+  for select to authenticated
+  using (user_id = (select auth.uid()));
+
+revoke all on public.sky_reports from anon, authenticated;
+grant insert (observed_at, lat, lon, cloud, transparency, seeing, note, fc_cloud, fc_seeing, fc_transp, fc_source, app_version)
+  on public.sky_reports to anon, authenticated;
+grant select on public.sky_reports to authenticated;
+
+-- Map-ready view for GIS tools (owner only; it reads through the same security rules).
+create or replace view public.sky_reports_v
+with (security_invoker = true) as
+select *, extensions.st_setsrid(extensions.st_makepoint(lon::float8, lat::float8), 4326)::extensions.geography as geog
+from public.sky_reports;
+
+-- Public totals: how many reports, and how often the cloud forecast was close.
+create or replace function public.sky_report_stats()
+returns table (reports bigint, with_forecast bigint, cloud_within_25 numeric, mean_cloud_error numeric)
+language sql
+security definer
+set search_path = ''
+stable
+as $$
+  select count(*),
+         count(fc_cloud),
+         round(100.0 * avg(case when abs(fc_cloud - cloud) <= 25 then 1 else 0 end) filter (where fc_cloud is not null), 0),
+         round(avg(abs(fc_cloud - cloud)) filter (where fc_cloud is not null)::numeric, 1)
+    from public.sky_reports;
+$$;
+
+revoke all on function public.sky_report_stats() from public;
+grant execute on function public.sky_report_stats() to anon, authenticated;
